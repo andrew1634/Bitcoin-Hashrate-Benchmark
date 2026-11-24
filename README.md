@@ -1,6 +1,6 @@
-# Bitcoin Hashrate Benchmark v1.0.2
+# Bitcoin Hashrate Benchmark
 
-**Latest stable release**
+**Browser release v1.0.2 · Windows desktop app v1.0.1**
 
 > **Created by Andrew Miller** — building cross-platform apps and learning through hands-on projects.
 >

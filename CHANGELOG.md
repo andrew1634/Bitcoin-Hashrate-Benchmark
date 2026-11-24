@@ -4,6 +4,8 @@ Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
 ## [1.0.2] - 2026-11-24
 
+Browser/HTML release only. The Windows desktop app remains at version 1.0.1.
+
 ### Fixed
 
 - Enabled cross-origin API access for the public leaderboard so the standalone browser page can load and submit results when opened as a local file.
