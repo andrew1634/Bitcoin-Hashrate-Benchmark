@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Text.Json;
 
 namespace BitcoinHashrateBenchmark;
 
@@ -13,12 +14,16 @@ internal sealed class MainForm : Form
     private readonly ComboBox durationBox = new();
     private readonly NumericUpDown threadCountBox = new();
     private readonly Button startButton = new();
+    private readonly Button clearHistoryButton = new();
     private readonly Label statusLabel = new();
+    private readonly Label historyStatusLabel = new();
+    private readonly ListBox historyList = new();
     private Label rateLabel = new();
     private Label hashesLabel = new();
     private Label elapsedLabel = new();
     private readonly ProgressBar progressBar = new();
     private readonly System.Windows.Forms.Timer displayTimer = new() { Interval = 250 };
+    private readonly BenchmarkHistoryStore historyStore = new();
     private CancellationTokenSource? runCancellation;
     private Stopwatch? runStopwatch;
     private long latestHashes;
@@ -26,15 +31,16 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark";
+        Text = "Bitcoin Hashrate Benchmark v1.0.0";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(620, 560);
-        Size = new Size(760, 650);
+        MinimumSize = new Size(620, 700);
+        Size = new Size(760, 780);
         BackColor = BackgroundColor;
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10);
 
         BuildInterface();
+        LoadHistory();
         displayTimer.Tick += (_, _) => UpdateElapsed();
     }
 
@@ -45,12 +51,13 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(34, 28, 34, 24),
             ColumnCount = 1,
-            RowCount = 6,
+            RowCount = 7,
             BackColor = BackgroundColor
         };
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 108));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
@@ -67,11 +74,19 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Measure your PC's SHA-256 double-hash speed",
+            Text = "Measure your PC's SHA-256 double-hash speed | v1.0.0",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
             Location = new Point(2, 42)
+        });
+        heading.Controls.Add(new Label
+        {
+            Text = "Idea: Andrew Miller | AI coding: Copilot Fusion",
+            Font = new Font("Segoe UI", 8),
+            ForeColor = MutedColor,
+            AutoSize = true,
+            Location = new Point(2, 66)
         });
         layout.Controls.Add(heading, 0, 0);
 
@@ -128,11 +143,54 @@ internal sealed class MainForm : Form
         results.Controls.Add(resultsLayout);
         layout.Controls.Add(results, 0, 2);
 
+        var history = CreateCard();
+        var historyLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(16, 8, 16, 8),
+            ColumnCount = 2,
+            RowCount = 3,
+            BackColor = PanelColor
+        };
+        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
+        historyLayout.Controls.Add(CreateCaption("RECENT RUNS (LAST 10)"), 0, 0);
+
+        clearHistoryButton.Text = "Clear";
+        clearHistoryButton.Enabled = false;
+        clearHistoryButton.Size = new Size(82, 25);
+        clearHistoryButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        clearHistoryButton.BackColor = BackgroundColor;
+        clearHistoryButton.ForeColor = Color.White;
+        clearHistoryButton.FlatStyle = FlatStyle.Flat;
+        clearHistoryButton.FlatAppearance.BorderColor = MutedColor;
+        clearHistoryButton.Click += (_, _) => ClearHistory();
+        historyLayout.Controls.Add(clearHistoryButton, 1, 0);
+
+        historyList.Dock = DockStyle.Fill;
+        historyList.BackColor = BackgroundColor;
+        historyList.ForeColor = Color.White;
+        historyList.BorderStyle = BorderStyle.None;
+        historyList.HorizontalScrollbar = true;
+        historyLayout.Controls.Add(historyList, 0, 1);
+        historyLayout.SetColumnSpan(historyList, 2);
+
+        historyStatusLabel.Text = "Saved locally on this PC.";
+        historyStatusLabel.ForeColor = MutedColor;
+        historyStatusLabel.AutoSize = true;
+        historyLayout.Controls.Add(historyStatusLabel, 0, 2);
+        historyLayout.SetColumnSpan(historyStatusLabel, 2);
+        history.Controls.Add(historyLayout);
+        layout.Controls.Add(history, 0, 3);
+
         progressBar.Dock = DockStyle.Fill;
         progressBar.Style = ProgressBarStyle.Continuous;
         progressBar.ForeColor = AccentColor;
         progressBar.Margin = new Padding(2, 12, 2, 12);
-        layout.Controls.Add(progressBar, 0, 3);
+        layout.Controls.Add(progressBar, 0, 4);
 
         var bottom = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         statusLabel.Text = "Ready when you are.";
@@ -140,7 +198,7 @@ internal sealed class MainForm : Form
         statusLabel.AutoSize = true;
         statusLabel.Location = new Point(2, 12);
         bottom.Controls.Add(statusLabel);
-        layout.Controls.Add(bottom, 0, 4);
+        layout.Controls.Add(bottom, 0, 5);
 
         var actions = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         startButton.Text = "Start benchmark";
@@ -155,7 +213,7 @@ internal sealed class MainForm : Form
         startButton.Click += async (_, _) => await ToggleBenchmarkAsync();
         actions.Resize += (_, _) => startButton.Location = new Point(actions.ClientSize.Width - startButton.Width, 4);
         actions.Controls.Add(startButton);
-        layout.Controls.Add(actions, 0, 5);
+        layout.Controls.Add(actions, 0, 6);
     }
 
     private async Task ToggleBenchmarkAsync()
@@ -200,6 +258,11 @@ internal sealed class MainForm : Form
             statusLabel.Text = runCancellation.IsCancellationRequested
                 ? "Benchmark stopped."
                 : "Benchmark complete.";
+            SaveHistory(new BenchmarkHistoryEntry(
+                DateTimeOffset.Now,
+                (int)threadCountBox.Value,
+                result.Hashes,
+                result.Elapsed.TotalSeconds));
         }
         catch (Exception exception)
         {
@@ -255,6 +318,61 @@ internal sealed class MainForm : Form
     {
         durationBox.Enabled = enabled;
         threadCountBox.Enabled = enabled;
+    }
+
+    private void LoadHistory()
+    {
+        try
+        {
+            RenderHistory(historyStore.Load());
+            historyStatusLabel.Text = "Saved locally on this PC.";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            clearHistoryButton.Enabled = true;
+            historyStatusLabel.Text = $"Could not load history; use Clear to remove it: {exception.Message}";
+        }
+    }
+
+    private void SaveHistory(BenchmarkHistoryEntry entry)
+    {
+        try
+        {
+            RenderHistory(historyStore.Add(entry));
+            historyStatusLabel.Text = "Run saved locally.";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            historyStatusLabel.Text = $"Could not save history: {exception.Message}";
+        }
+    }
+
+    private void ClearHistory()
+    {
+        try
+        {
+            historyStore.Clear();
+            RenderHistory([]);
+            historyStatusLabel.Text = "Run history cleared.";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            historyStatusLabel.Text = $"Could not clear history: {exception.Message}";
+        }
+    }
+
+    private void RenderHistory(IEnumerable<BenchmarkHistoryEntry> entries)
+    {
+        historyList.BeginUpdate();
+        historyList.Items.Clear();
+        foreach (var entry in entries)
+        {
+            historyList.Items.Add(
+                $"{entry.CompletedAt.LocalDateTime:g} | {entry.ElapsedSeconds:F1} s | "
+                + $"{entry.ThreadCount} threads | {entry.Hashes:N0} hashes | {FormatRate(entry.HashesPerSecond)}");
+        }
+        historyList.EndUpdate();
+        clearHistoryButton.Enabled = historyList.Items.Count > 0;
     }
 
     private static string FormatRate(double hashesPerSecond) =>

@@ -1,4 +1,6 @@
-# Bitcoin Hashrate Benchmark
+# Bitcoin Hashrate Benchmark v1.0.0
+
+**Stable release**
 
 A local benchmark for comparing how devices perform SHA-256 double hashing. The Windows desktop app and standalone browser version are for learning and performance testing only. The Windows app can be published for x64 and ARM64; the browser version can run on compatible Windows, Android, and iOS browsers, including on ARM32 and ARM64 devices.
 
@@ -8,7 +10,7 @@ Both versions repeatedly hash a synthetic 80-byte header with SHA-256 twice, sim
 
 ## Run in a browser
 
-Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The benchmark is architecture-independent and can run on ARM32 and ARM64 devices. Choose a duration and number of browser workers; the default uses the available logical processors (up to 16). The page makes no network requests. Some mobile browsers restrict locally opened files; if so, open it from a secure HTTPS site instead.
+Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The benchmark is architecture-independent and can run on ARM32 and ARM64 devices. Choose a duration and number of browser workers; the default uses the available logical processors (up to 16). The page makes no network requests. The last 10 runs are saved locally in the browser; use **Clear history** to remove them. Some mobile browsers restrict local files or browser storage; if so, open it from a secure HTTPS site instead.
 
 ## Compare results carefully
 
@@ -22,6 +24,8 @@ Install the .NET 10 SDK, then from this repository run:
 dotnet run --project .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj
 ```
 
+The desktop app saves the last 10 runs to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\history.json`.
+
 To publish a self-contained, single-file Windows x64 app:
 
 ```powershell
@@ -34,4 +38,15 @@ For native Windows ARM64:
 dotnet publish .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj -c Release -r win-arm64 --self-contained true /p:PublishSingleFile=true
 ```
 
-The published app is in `BitcoinHashrateBenchmark\bin\Release\net10.0-windows\<runtime>\publish`, where `<runtime>` is `win-x64` or `win-arm64`. The current .NET 10 Windows desktop project does not provide a native ARM32 target; use the browser version on ARM32 Windows devices with a compatible browser.
+For a smaller download, publish a single-file app that uses the installed .NET 10 Desktop Runtime:
+
+```powershell
+dotnet publish .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true
+```
+
+Use `win-arm64` in place of `win-x64` to publish the smaller ARM64 build. The self-contained apps are in `BitcoinHashrateBenchmark\bin\Release\net10.0-windows\<runtime>\publish`, where `<runtime>` is `win-x64` or `win-arm64`. Framework-dependent builds are much smaller but require the matching .NET 10 Desktop Runtime on the PC. The current .NET 10 Windows desktop project does not provide a native ARM32 target; use the browser version on ARM32 Windows devices with a compatible browser.
+
+## Credits
+
+- Idea: Andrew Miller
+- AI coding: Copilot Fusion

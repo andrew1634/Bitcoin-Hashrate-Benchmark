@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark</title>
+  <title>Browser Hashrate Benchmark v1.0.0</title>
   <style>
     :root {
       color-scheme: dark;
@@ -206,6 +206,31 @@
     }
 
     #status { min-height: 1.5em; margin: 0; }
+    .history-card .section-heading { margin-bottom: 12px; }
+    .history-card .section-heading button { width: auto; min-height: 38px; }
+    .history-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .history-item {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 4px 16px;
+      padding: 11px 13px;
+      border: 1px solid rgb(148 163 184 / 12%);
+      border-radius: 10px;
+      background: rgb(15 23 42 / 55%);
+      color: #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .history-details, #history-status { color: #94a3b8; }
+    #history-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
     .note {
       margin: 24px 4px 0;
       color: #8796aa;
@@ -291,11 +316,21 @@
       </div>
     </section>
 
+    <section class="card history-card" aria-labelledby="history-heading">
+      <div class="section-heading">
+        <h2 id="history-heading">Recent runs</h2>
+        <button id="clear-history" type="button">Clear history</button>
+      </div>
+      <ol class="history-list" id="history-list"></ol>
+      <p id="history-status" role="status" aria-live="polite">Saved in this browser only.</p>
+    </section>
+
     <p class="note">
       Results vary with browser, power mode, temperature, and other running tabs.
       Browser and Windows app results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. Stable release v1.0.0.</p>
   </main>
 
   <script>
@@ -366,7 +401,12 @@
     const hashes = document.querySelector("#hashes");
     const elapsed = document.querySelector("#elapsed");
     const progress = document.querySelector("#progress");
+    const historyList = document.querySelector("#history-list");
+    const historyStatus = document.querySelector("#history-status");
+    const clearHistoryButton = document.querySelector("#clear-history");
     const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 16));
+    const historyKey = "bitcoin-hashrate-benchmark.history.v1";
+    const historyLimit = 10;
 
     for (let count = 1; count <= workerCount; count++) {
       threadSelect.add(new Option(String(count), String(count), false, count === workerCount));
@@ -389,6 +429,81 @@
 
     function formatPerThreadRate(value) {
       return `${formatRate(value).replace("H/s", "H/s/thread")}`;
+    }
+
+    function readHistory() {
+      const saved = globalThis.localStorage.getItem(historyKey);
+      if (saved === null) return [];
+
+      const entries = JSON.parse(saved);
+      if (!Array.isArray(entries)) throw new Error("Saved run history is invalid.");
+
+      for (const entry of entries) {
+        if (!entry
+          || typeof entry.completedAt !== "string"
+          || !Number.isFinite(Date.parse(entry.completedAt))
+          || !Number.isSafeInteger(entry.threadCount)
+          || entry.threadCount < 1
+          || !Number.isSafeInteger(entry.hashes)
+          || entry.hashes < 0
+          || !Number.isFinite(entry.elapsedSeconds)
+          || entry.elapsedSeconds <= 0) {
+          throw new Error("Saved run history contains an invalid entry.");
+        }
+      }
+
+      return entries.slice(0, historyLimit);
+    }
+
+    function renderHistory(entries) {
+      historyList.replaceChildren();
+      for (const entry of entries) {
+        const item = document.createElement("li");
+        item.className = "history-item";
+
+        const completedAt = document.createElement("span");
+        completedAt.textContent = new Date(entry.completedAt).toLocaleString();
+        const details = document.createElement("span");
+        details.className = "history-details";
+        details.textContent = `${entry.elapsedSeconds.toFixed(1)} s · ${entry.threadCount} thread(s) · `
+          + `${entry.hashes.toLocaleString()} hashes · ${formatRate(entry.hashes / entry.elapsedSeconds)}`;
+
+        item.append(completedAt, details);
+        historyList.append(item);
+      }
+      clearHistoryButton.disabled = entries.length === 0;
+    }
+
+    function loadHistory() {
+      try {
+        renderHistory(readHistory());
+        historyStatus.textContent = "Saved in this browser only.";
+      } catch (error) {
+        historyStatus.textContent = `Could not load history: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    function saveHistory(entry) {
+      try {
+        const entries = readHistory();
+        entries.unshift(entry);
+        const recentEntries = entries.slice(0, historyLimit);
+        globalThis.localStorage.setItem(historyKey, JSON.stringify(recentEntries));
+        renderHistory(recentEntries);
+        historyStatus.textContent = "Run saved in this browser.";
+      } catch (error) {
+        historyStatus.textContent = `Could not save history: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    function clearHistory() {
+      try {
+        globalThis.localStorage.removeItem(historyKey);
+        renderHistory([]);
+        historyStatus.textContent = "Run history cleared.";
+      } catch (error) {
+        historyStatus.textContent = `Could not clear history: ${error instanceof Error ? error.message : String(error)}`;
+      }
     }
 
     function updateDisplay(elapsedMs) {
@@ -484,6 +599,12 @@
 
         updateDisplay(performance.now() - startedAt);
         status.textContent = stoppedByUser ? "Benchmark stopped." : "Benchmark complete.";
+        saveHistory({
+          completedAt: new Date().toISOString(),
+          threadCount: count,
+          hashes: totalHashes,
+          elapsedSeconds: (performance.now() - startedAt) / 1000
+        });
       } catch (error) {
         status.textContent = `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`;
       } finally {
@@ -500,6 +621,8 @@
     }
 
     startButton.addEventListener("click", startBenchmark);
+    clearHistoryButton.addEventListener("click", clearHistory);
+    loadHistory();
   </script>
 </body>
 </html>
