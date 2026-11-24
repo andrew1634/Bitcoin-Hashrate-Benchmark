@@ -2,6 +2,12 @@ const architectures = new Set(["ARM64", "ARM32", "x64", "x86", "Other", "Unknown
 const sources = new Set(["browser", "windows"]);
 const maxEntries = 100;
 const maxModelLength = 100;
+const corsHeaders = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "Accept, Content-Type",
+  "access-control-max-age": "86400"
+};
 
 function respond(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -9,7 +15,8 @@ function respond(body, status = 200) {
     headers: {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
-      "x-content-type-options": "nosniff"
+      "x-content-type-options": "nosniff",
+      ...corsHeaders
     }
   });
 }
@@ -168,6 +175,11 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
+    }
+
+    if (request.method === "OPTIONS"
+      && (url.pathname === "/api/leaderboard" || url.pathname === "/api/submissions")) {
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     if (url.pathname === "/api/leaderboard" && request.method === "GET") {

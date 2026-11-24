@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark v1.0.1</title>
+  <title>Browser Hashrate Benchmark v1.0.2</title>
   <style>
     :root {
       color-scheme: dark;
@@ -441,7 +441,7 @@
       Browser and Windows app results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
-    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. Stable release v1.0.1.</p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. Stable release v1.0.2.</p>
   </main>
 
   <script>
@@ -526,7 +526,9 @@
     const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 16));
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
     const historyLimit = 10;
-    const apiBaseUrl = location.protocol === "file:" ? null : location.origin;
+    const apiBaseUrl = location.protocol === "file:"
+      ? "https://bitcoin-hashrate-benchmark.azgasgiant220.workers.dev"
+      : location.origin;
     let latestRun = null;
 
     for (let count = 1; count <= workerCount; count++) {
@@ -594,7 +596,7 @@
 
     async function refreshLeaderboard() {
       if (!apiBaseUrl) {
-        leaderboardStatus.textContent = "The public leaderboard is unavailable when this page is opened as a local file.";
+        leaderboardStatus.textContent = "The public leaderboard is unavailable from this page.";
         return;
       }
 

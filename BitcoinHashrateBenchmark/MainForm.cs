@@ -42,7 +42,7 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.1";
+        Text = "Bitcoin Hashrate Benchmark v1.0.2";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 870);
         Size = new Size(760, 980);
@@ -87,7 +87,7 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Measure your PC's SHA-256 double-hash speed | v1.0.1",
+            Text = "Measure your PC's SHA-256 double-hash speed | v1.0.2",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,

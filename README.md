@@ -1,4 +1,4 @@
-# Bitcoin Hashrate Benchmark v1.0.1
+# Bitcoin Hashrate Benchmark v1.0.2
 
 **Latest stable release**
 
@@ -16,7 +16,7 @@ Both versions repeatedly hash a synthetic 80-byte header with SHA-256 twice, sim
 
 ## Run in a browser
 
-Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The benchmark is architecture-independent and can run on ARM32 and ARM64 devices. Choose a duration and number of browser workers; the default uses the available logical processors (up to 16). The last 10 runs are saved locally in the browser; use **Clear history** to remove them. A page opened as a local file can benchmark and save runs locally, but the public leaderboard is available from the hosted Worker site.
+Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The benchmark is architecture-independent and can run on ARM32 and ARM64 devices. Choose a duration and number of browser workers; the default uses the available logical processors (up to 16). The last 10 runs are saved locally in the browser; use **Clear history** to remove them. A page opened as a local file can use the public leaderboard too; it connects to the hosted Worker API over HTTPS.
 
 ## Optional public leaderboard
 

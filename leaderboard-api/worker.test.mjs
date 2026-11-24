@@ -77,6 +77,22 @@ test("serves static assets for non-API requests", async () => {
   assert.equal(await response.text(), "benchmark page");
 });
 
+test("allows cross-origin preflight requests from local browser files", async () => {
+  const request = new Request("https://benchmark.example/api/submissions", {
+    method: "OPTIONS",
+    headers: {
+      Origin: "null",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type"
+    }
+  });
+  const response = await worker.fetch(request, environment());
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.match(response.headers.get("access-control-allow-methods"), /POST/);
+  assert.match(response.headers.get("access-control-allow-headers"), /Content-Type/i);
+});
+
 test("rejects malformed or out-of-range submissions", async () => {
   const db = new TestDatabase();
   for (const body of [
@@ -139,6 +155,7 @@ test("returns a bounded leaderboard with a supported sort order", async () => {
     environment(db)
   );
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
   assert.deepEqual(await response.json(), { entries: [] });
   assert.match(db.query, /ORDER BY submitted_at DESC/);
   assert.equal(db.boundValues[0], 100);
