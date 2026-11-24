@@ -231,6 +231,72 @@
 
     .history-details, #history-status { color: #94a3b8; }
     #history-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
+    .leaderboard-card .section-heading { margin-bottom: 12px; }
+    .leaderboard-card .section-heading button,
+    .leaderboard-actions button { width: auto; min-height: 38px; }
+    .leaderboard-options {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr) minmax(120px, 0.55fr);
+      align-items: end;
+      gap: 12px;
+    }
+
+    .leaderboard-options input, .leaderboard-options select {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #3b4b62;
+      border-radius: 10px;
+      background: #111c30;
+      color: #f8fafc;
+      font: inherit;
+    }
+
+    .leaderboard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .leaderboard-actions select {
+      width: auto;
+      min-height: 38px;
+      padding: 7px 10px;
+      border: 1px solid #3b4b62;
+      border-radius: 10px;
+      background: #111c30;
+      color: #f8fafc;
+      font: inherit;
+    }
+
+    #leaderboard-status, #hardware-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
+    #leaderboard-status { color: #94a3b8; }
+    #hardware-status { margin-top: 8px; color: #94a3b8; }
+    .leaderboard-list {
+      display: grid;
+      gap: 8px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .leaderboard-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+      gap: 6px 12px;
+      padding: 11px 13px;
+      border: 1px solid rgb(148 163 184 / 12%);
+      border-radius: 10px;
+      background: rgb(15 23 42 / 55%);
+      color: #e2e8f0;
+      font-size: 0.9rem;
+    }
+
+    .leaderboard-item span { overflow-wrap: anywhere; }
+    .leaderboard-detail { color: #94a3b8; }
     .note {
       margin: 24px 4px 0;
       color: #8796aa;
@@ -244,6 +310,8 @@
       .settings, .metrics { grid-template-columns: 1fr; }
       .metric:first-child { grid-column: auto; }
       .local-pill { font-size: 0.62rem; }
+      .leaderboard-options { grid-template-columns: 1fr; }
+      .leaderboard-item { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -260,8 +328,8 @@
     <section class="hero">
       <h1>Bitcoin Hashrate<br><span>Benchmark</span></h1>
       <p>
-        See how your device handles SHA-256 double hashing. A local learning
-        benchmark only — no mining, network connection, pool, or wallet.
+        See how your device handles SHA-256 double hashing. Benchmarking runs
+        locally — no mining, pool, or wallet. Sharing results is optional.
       </p>
     </section>
 
@@ -323,6 +391,49 @@
       </div>
       <ol class="history-list" id="history-list"></ol>
       <p id="history-status" role="status" aria-live="polite">Saved in this browser only.</p>
+    </section>
+
+    <section class="card leaderboard-card" aria-labelledby="leaderboard-heading">
+      <div class="section-heading">
+        <h2 id="leaderboard-heading">Public leaderboard</h2>
+        <button id="refresh-leaderboard" type="button">Refresh</button>
+      </div>
+      <p>
+        Public submissions are optional and unverified. Device details, benchmark
+        speed, thread count, and submission date will be visible to everyone.
+      </p>
+      <div class="leaderboard-options">
+        <div>
+          <label for="leaderboard-model">CPU / DEVICE MODEL (BEST-EFFORT)</label>
+          <input id="leaderboard-model" type="text" maxlength="100" autocomplete="off">
+        </div>
+        <div>
+          <label for="leaderboard-architecture">ARCHITECTURE</label>
+          <select id="leaderboard-architecture">
+            <option>Unknown</option>
+            <option>ARM64</option>
+            <option>ARM32</option>
+            <option>x64</option>
+            <option>x86</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="leaderboard-sort">SORT BY</label>
+          <select id="leaderboard-sort">
+            <option value="performance">Hash rate</option>
+            <option value="newest">Submission date</option>
+          </select>
+        </div>
+      </div>
+      <p id="hardware-status" aria-live="polite">
+        Browsers rarely expose the exact CPU model. Detected details may be incomplete; review or edit them before submitting.
+      </p>
+      <div class="leaderboard-actions">
+        <button id="submit-result" type="button" disabled>Submit latest run</button>
+      </div>
+      <p id="leaderboard-status" role="status" aria-live="polite">Loading public results...</p>
+      <ol class="leaderboard-list" id="leaderboard-list"></ol>
     </section>
 
     <p class="note">
@@ -404,9 +515,19 @@
     const historyList = document.querySelector("#history-list");
     const historyStatus = document.querySelector("#history-status");
     const clearHistoryButton = document.querySelector("#clear-history");
+    const leaderboardModel = document.querySelector("#leaderboard-model");
+    const leaderboardArchitecture = document.querySelector("#leaderboard-architecture");
+    const leaderboardSort = document.querySelector("#leaderboard-sort");
+    const leaderboardList = document.querySelector("#leaderboard-list");
+    const leaderboardStatus = document.querySelector("#leaderboard-status");
+    const hardwareStatus = document.querySelector("#hardware-status");
+    const refreshLeaderboardButton = document.querySelector("#refresh-leaderboard");
+    const submitResultButton = document.querySelector("#submit-result");
     const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 16));
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
     const historyLimit = 10;
+    const apiBaseUrl = location.protocol === "file:" ? null : location.origin;
+    let latestRun = null;
 
     for (let count = 1; count <= workerCount; count++) {
       threadSelect.add(new Option(String(count), String(count), false, count === workerCount));
@@ -429,6 +550,124 @@
 
     function formatPerThreadRate(value) {
       return `${formatRate(value).replace("H/s", "H/s/thread")}`;
+    }
+
+    function normalizeArchitecture(architecture, bitness) {
+      const value = String(architecture || "").toLowerCase();
+      if (value.includes("arm")) {
+        if (bitness === "64" || value.includes("arm64")) return "ARM64";
+        if (bitness === "32") return "ARM32";
+        return "Unknown";
+      }
+      if (value.includes("x86") || value.includes("i386")) {
+        if (bitness === "32") return "x86";
+        if (bitness === "64" || value.includes("x86_64")) return "x64";
+        return "Unknown";
+      }
+      return value ? "Other" : "Unknown";
+    }
+
+    async function detectDeviceDetails() {
+      const hints = navigator.userAgentData;
+      if (!hints?.getHighEntropyValues) {
+        leaderboardModel.value = "Unreported";
+        hardwareStatus.textContent = "This browser does not expose hardware details; edit them if known.";
+        return;
+      }
+
+      try {
+        const details = await hints.getHighEntropyValues(["architecture", "bitness", "model"]);
+        leaderboardModel.value = details.model?.trim() || "Unreported";
+        leaderboardArchitecture.value = normalizeArchitecture(details.architecture, details.bitness);
+        hardwareStatus.textContent = "Browsers may report a device model, not its exact CPU; review or edit these details before submitting.";
+      } catch (error) {
+        leaderboardModel.value = "Unreported";
+        hardwareStatus.textContent = `Could not detect hardware details: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    function formatSubmissionRate(value) {
+      if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} MH/s`;
+      if (value >= 1_000) return `${(value / 1_000).toFixed(2)} kH/s`;
+      return `${value.toFixed(0)} H/s`;
+    }
+
+    async function refreshLeaderboard() {
+      if (!apiBaseUrl) {
+        leaderboardStatus.textContent = "The public leaderboard is unavailable when this page is opened as a local file.";
+        return;
+      }
+
+      refreshLeaderboardButton.disabled = true;
+      leaderboardStatus.textContent = "Loading public results...";
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/api/leaderboard?sort=${encodeURIComponent(leaderboardSort.value)}&limit=100`,
+          { headers: { Accept: "application/json" } }
+        );
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
+        if (!Array.isArray(result.entries)) throw new Error("The leaderboard response is invalid.");
+
+        leaderboardList.replaceChildren();
+        for (const entry of result.entries) {
+          const item = document.createElement("li");
+          item.className = "leaderboard-item";
+          const score = document.createElement("span");
+          score.textContent = `${entry.categoryRank === 1 ? "👑 " : ""}${formatSubmissionRate(entry.hashesPerSecond)}`;
+          const device = document.createElement("span");
+          device.className = "leaderboard-detail";
+          device.textContent = `${entry.architecture} · ${entry.cpuModel}`;
+          const run = document.createElement("span");
+          run.className = "leaderboard-detail";
+          run.textContent = `${entry.threadCount} thread(s) · ${entry.source}`;
+          const date = document.createElement("span");
+          date.className = "leaderboard-detail";
+          date.textContent = `${new Date(entry.submittedAt).toLocaleString()} · ${entry.verificationStatus}`;
+          item.append(score, device, run, date);
+          leaderboardList.append(item);
+        }
+        leaderboardStatus.textContent = result.entries.length
+          ? `Showing ${result.entries.length} entries, sorted by ${leaderboardSort.value === "newest" ? "submission date" : "hash rate"}. Crowns mark category leaders.`
+          : "No public results yet.";
+      } catch (error) {
+        leaderboardStatus.textContent = `Could not load leaderboard: ${error instanceof Error ? error.message : String(error)}`;
+      } finally {
+        refreshLeaderboardButton.disabled = false;
+      }
+    }
+
+    async function submitLatestRun() {
+      if (!apiBaseUrl || !latestRun) return;
+
+      const confirmation = "This will publicly share your CPU model, architecture, hash count, speed, "
+        + "thread count, and submission date. The result will be marked unverified. Continue?";
+      if (!globalThis.confirm(confirmation)) return;
+
+      submitResultButton.disabled = true;
+      leaderboardStatus.textContent = "Submitting result...";
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/submissions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            cpuModel: leaderboardModel.value.trim() || "Unreported",
+            architecture: leaderboardArchitecture.value,
+            source: "browser",
+            hashes: latestRun.hashes,
+            elapsedSeconds: latestRun.elapsedSeconds,
+            threadCount: latestRun.threadCount
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
+        leaderboardStatus.textContent = "Result submitted as unverified.";
+        await refreshLeaderboard();
+      } catch (error) {
+        leaderboardStatus.textContent = `Could not submit result: ${error instanceof Error ? error.message : String(error)}`;
+      } finally {
+        submitResultButton.disabled = false;
+      }
     }
 
     function readHistory() {
@@ -547,6 +786,8 @@
 
       running = true;
       stoppedByUser = false;
+      latestRun = null;
+      submitResultButton.disabled = true;
       doneWorkers = 0;
       totalHashes = 0;
       workerHashes = [];
@@ -599,12 +840,15 @@
 
         updateDisplay(performance.now() - startedAt);
         status.textContent = stoppedByUser ? "Benchmark stopped." : "Benchmark complete.";
-        saveHistory({
+        const completedRun = {
           completedAt: new Date().toISOString(),
           threadCount: count,
           hashes: totalHashes,
           elapsedSeconds: (performance.now() - startedAt) / 1000
-        });
+        };
+        saveHistory(completedRun);
+        latestRun = stoppedByUser ? null : completedRun;
+        submitResultButton.disabled = !latestRun;
       } catch (error) {
         status.textContent = `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`;
       } finally {
@@ -622,6 +866,11 @@
 
     startButton.addEventListener("click", startBenchmark);
     clearHistoryButton.addEventListener("click", clearHistory);
+    refreshLeaderboardButton.addEventListener("click", refreshLeaderboard);
+    submitResultButton.addEventListener("click", submitLatestRun);
+    leaderboardSort.addEventListener("change", refreshLeaderboard);
+    detectDeviceDetails();
+    refreshLeaderboard();
     loadHistory();
   </script>
 </body>

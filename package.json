@@ -1,0 +1,11 @@
+{
+  "name": "bitcoin-hashrate-benchmark",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler d1 migrations apply bitcoin-hashrate-leaderboard --remote && wrangler deploy",
+    "test:leaderboard": "node --test leaderboard-api/worker.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.168.0"
+  }
+}

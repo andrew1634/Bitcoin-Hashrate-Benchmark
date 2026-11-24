@@ -2,3 +2,5 @@
 [Oo]bj/
 *.user
 *.suo
+node_modules/
+.wrangler/

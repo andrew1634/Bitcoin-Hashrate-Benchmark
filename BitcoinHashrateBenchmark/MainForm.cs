@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.Win32;
 
 namespace BitcoinHashrateBenchmark;
 
@@ -15,17 +17,26 @@ internal sealed class MainForm : Form
     private readonly NumericUpDown threadCountBox = new();
     private readonly Button startButton = new();
     private readonly Button clearHistoryButton = new();
+    private readonly Button submitLeaderboardButton = new();
+    private readonly Button refreshLeaderboardButton = new();
+    private readonly TextBox leaderboardUrlBox = new();
+    private readonly TextBox cpuModelBox = new();
+    private readonly ComboBox architectureBox = new();
     private readonly Label statusLabel = new();
     private readonly Label historyStatusLabel = new();
+    private readonly Label leaderboardStatusLabel = new();
     private readonly ListBox historyList = new();
+    private readonly ListBox leaderboardList = new();
     private Label rateLabel = new();
     private Label hashesLabel = new();
     private Label elapsedLabel = new();
     private readonly ProgressBar progressBar = new();
     private readonly System.Windows.Forms.Timer displayTimer = new() { Interval = 250 };
     private readonly BenchmarkHistoryStore historyStore = new();
+    private readonly LeaderboardSettingsStore leaderboardSettingsStore = new();
     private CancellationTokenSource? runCancellation;
     private Stopwatch? runStopwatch;
+    private BenchmarkResult? latestResult;
     private long latestHashes;
     private int selectedSeconds;
 
@@ -33,14 +44,15 @@ internal sealed class MainForm : Form
     {
         Text = "Bitcoin Hashrate Benchmark v1.0.0";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(620, 700);
-        Size = new Size(760, 780);
+        MinimumSize = new Size(620, 870);
+        Size = new Size(760, 980);
         BackColor = BackgroundColor;
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10);
 
         BuildInterface();
         LoadHistory();
+        LoadLeaderboardSettings();
         displayTimer.Tick += (_, _) => UpdateElapsed();
     }
 
@@ -51,13 +63,14 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(34, 28, 34, 24),
             ColumnCount = 1,
-            RowCount = 7,
+            RowCount = 8,
             BackColor = BackgroundColor
         };
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 108));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 230));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
@@ -186,11 +199,98 @@ internal sealed class MainForm : Form
         history.Controls.Add(historyLayout);
         layout.Controls.Add(history, 0, 3);
 
+        var leaderboard = CreateCard();
+        var leaderboardLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(16, 8, 16, 8),
+            ColumnCount = 1,
+            RowCount = 5,
+            BackColor = PanelColor
+        };
+        leaderboardLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
+        leaderboardLayout.Controls.Add(CreateCaption("PUBLIC LEADERBOARD · UNVERIFIED"), 0, 0);
+
+        var leaderboardSettings = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 2,
+            BackColor = PanelColor
+        };
+        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
+        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        leaderboardSettings.Controls.Add(CreateCaption("SERVICE URL"), 0, 0);
+        leaderboardSettings.Controls.Add(CreateCaption("CPU MODEL (DETECTED, EDITABLE)"), 1, 0);
+        leaderboardSettings.Controls.Add(CreateCaption("ARCH"), 2, 0);
+
+        leaderboardUrlBox.PlaceholderText = "https://your-worker.workers.dev";
+        leaderboardUrlBox.AccessibleName = "Public leaderboard service URL";
+        StyleInput(leaderboardUrlBox);
+        leaderboardSettings.Controls.Add(leaderboardUrlBox, 0, 1);
+
+        cpuModelBox.Text = DetectCpuModel();
+        cpuModelBox.AccessibleName = "CPU model; edit before submitting if incorrect";
+        StyleInput(cpuModelBox);
+        leaderboardSettings.Controls.Add(cpuModelBox, 1, 1);
+
+        architectureBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        architectureBox.Items.AddRange(["ARM64", "ARM32", "x64", "x86", "Other", "Unknown"]);
+        architectureBox.SelectedItem = DetectArchitecture();
+        architectureBox.AccessibleName = "Processor architecture";
+        StyleInput(architectureBox);
+        leaderboardSettings.Controls.Add(architectureBox, 2, 1);
+        leaderboardLayout.Controls.Add(leaderboardSettings, 0, 1);
+
+        var leaderboardActions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = PanelColor,
+            Padding = new Padding(0)
+        };
+        submitLeaderboardButton.Text = "Submit latest run";
+        submitLeaderboardButton.Enabled = false;
+        submitLeaderboardButton.Width = 150;
+        submitLeaderboardButton.Height = 28;
+        submitLeaderboardButton.Click += async (_, _) => await SubmitLatestRunAsync();
+        leaderboardActions.Controls.Add(submitLeaderboardButton);
+
+        refreshLeaderboardButton.Text = "Refresh";
+        refreshLeaderboardButton.Width = 90;
+        refreshLeaderboardButton.Height = 28;
+        refreshLeaderboardButton.Click += async (_, _) => await RefreshLeaderboardAsync();
+        leaderboardActions.Controls.Add(refreshLeaderboardButton);
+        leaderboardLayout.Controls.Add(leaderboardActions, 0, 2);
+
+        leaderboardList.Dock = DockStyle.Fill;
+        leaderboardList.BackColor = BackgroundColor;
+        leaderboardList.ForeColor = Color.White;
+        leaderboardList.BorderStyle = BorderStyle.None;
+        leaderboardList.HorizontalScrollbar = true;
+        leaderboardLayout.Controls.Add(leaderboardList, 0, 3);
+
+        leaderboardStatusLabel.Text = "Submitting is optional; public entries include device details and are unverified.";
+        leaderboardStatusLabel.ForeColor = MutedColor;
+        leaderboardStatusLabel.AutoSize = true;
+        leaderboardLayout.Controls.Add(leaderboardStatusLabel, 0, 4);
+        leaderboard.Controls.Add(leaderboardLayout);
+        layout.Controls.Add(leaderboard, 0, 4);
+
         progressBar.Dock = DockStyle.Fill;
         progressBar.Style = ProgressBarStyle.Continuous;
         progressBar.ForeColor = AccentColor;
         progressBar.Margin = new Padding(2, 12, 2, 12);
-        layout.Controls.Add(progressBar, 0, 4);
+        layout.Controls.Add(progressBar, 0, 5);
 
         var bottom = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         statusLabel.Text = "Ready when you are.";
@@ -198,7 +298,7 @@ internal sealed class MainForm : Form
         statusLabel.AutoSize = true;
         statusLabel.Location = new Point(2, 12);
         bottom.Controls.Add(statusLabel);
-        layout.Controls.Add(bottom, 0, 5);
+        layout.Controls.Add(bottom, 0, 6);
 
         var actions = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         startButton.Text = "Start benchmark";
@@ -213,7 +313,7 @@ internal sealed class MainForm : Form
         startButton.Click += async (_, _) => await ToggleBenchmarkAsync();
         actions.Resize += (_, _) => startButton.Location = new Point(actions.ClientSize.Width - startButton.Width, 4);
         actions.Controls.Add(startButton);
-        layout.Controls.Add(actions, 0, 6);
+        layout.Controls.Add(actions, 0, 7);
     }
 
     private async Task ToggleBenchmarkAsync()
@@ -232,6 +332,8 @@ internal sealed class MainForm : Form
             2 => 30,
             _ => 10
         };
+        latestResult = null;
+        submitLeaderboardButton.Enabled = false;
         latestHashes = 0;
         rateLabel.Text = "0 H/s";
         hashesLabel.Text = "0";
@@ -263,6 +365,11 @@ internal sealed class MainForm : Form
                 (int)threadCountBox.Value,
                 result.Hashes,
                 result.Elapsed.TotalSeconds));
+            if (!runCancellation.IsCancellationRequested)
+            {
+                latestResult = result;
+                submitLeaderboardButton.Enabled = true;
+            }
         }
         catch (Exception exception)
         {
@@ -333,6 +440,131 @@ internal sealed class MainForm : Form
             historyStatusLabel.Text = $"Could not load history; use Clear to remove it: {exception.Message}";
         }
     }
+
+    private void LoadLeaderboardSettings()
+    {
+        try
+        {
+            leaderboardUrlBox.Text = leaderboardSettingsStore.Load();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            leaderboardStatusLabel.Text = $"Could not load leaderboard settings: {exception.Message}";
+        }
+    }
+
+    private async Task RefreshLeaderboardAsync()
+    {
+        try
+        {
+            SaveLeaderboardUrl();
+            refreshLeaderboardButton.Enabled = false;
+            leaderboardStatusLabel.Text = "Loading public results...";
+            var entries = await LeaderboardClient.GetAsync(leaderboardUrlBox.Text);
+            leaderboardList.BeginUpdate();
+            leaderboardList.Items.Clear();
+            foreach (var entry in entries)
+            {
+                var crown = entry.CategoryRank == 1 ? "👑 " : "";
+                leaderboardList.Items.Add(
+                    $"{crown}{entry.HashesPerSecond:N0} H/s | {entry.Architecture} | {entry.CpuModel} | "
+                    + $"{entry.SubmittedAt.LocalDateTime:g} | {entry.VerificationStatus}");
+            }
+            leaderboardList.EndUpdate();
+            leaderboardStatusLabel.Text = entries.Count == 0
+                ? "No public results yet."
+                : $"Showing {entries.Count} results, sorted by hashes per second.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or UriFormatException or JsonException or TaskCanceledException or
+                InvalidOperationException or UnauthorizedAccessException or IOException)
+        {
+            leaderboardStatusLabel.Text = $"Could not load leaderboard: {exception.Message}";
+        }
+        finally
+        {
+            refreshLeaderboardButton.Enabled = true;
+        }
+    }
+
+    private async Task SubmitLatestRunAsync()
+    {
+        if (latestResult is not { } result)
+        {
+            leaderboardStatusLabel.Text = "Complete a benchmark before submitting a result.";
+            return;
+        }
+
+        var confirmation = MessageBox.Show(
+            this,
+            "This will publicly share your CPU model, architecture, hash count, speed, thread count, "
+            + "and submission date. The result will be marked unverified. Continue?",
+            "Submit public result",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Information);
+        if (confirmation != DialogResult.Yes) return;
+
+        try
+        {
+            SaveLeaderboardUrl();
+            submitLeaderboardButton.Enabled = false;
+            leaderboardStatusLabel.Text = "Submitting result...";
+            await LeaderboardClient.SubmitAsync(
+                leaderboardUrlBox.Text,
+                new LeaderboardSubmission(
+                    string.IsNullOrWhiteSpace(cpuModelBox.Text) ? "Unreported" : cpuModelBox.Text.Trim(),
+                    architectureBox.SelectedItem?.ToString() ?? "Unknown",
+                    "windows",
+                    result.Hashes,
+                    result.Elapsed.TotalSeconds,
+                    (int)threadCountBox.Value));
+            leaderboardStatusLabel.Text = "Result submitted as unverified.";
+            await RefreshLeaderboardAsync();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or UriFormatException or JsonException or TaskCanceledException or
+                InvalidOperationException or UnauthorizedAccessException or IOException)
+        {
+            leaderboardStatusLabel.Text = $"Could not submit result: {exception.Message}";
+        }
+        finally
+        {
+            submitLeaderboardButton.Enabled = latestResult.HasValue;
+        }
+    }
+
+    private void SaveLeaderboardUrl()
+    {
+        leaderboardSettingsStore.Save(leaderboardUrlBox.Text);
+    }
+
+    private static string DetectCpuModel()
+    {
+        try
+        {
+            return Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0",
+                "ProcessorNameString",
+                null) as string
+                ?? Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER")
+                ?? "Unreported";
+        }
+        catch (Exception exception) when (
+            exception is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+        {
+            return Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? "Unreported";
+        }
+    }
+
+    private static string DetectArchitecture() =>
+        RuntimeInformation.OSArchitecture switch
+        {
+            Architecture.Arm64 => "ARM64",
+            Architecture.Arm => "ARM32",
+            Architecture.X64 => "x64",
+            Architecture.X86 => "x86",
+            _ => "Unknown"
+        };
 
     private void SaveHistory(BenchmarkHistoryEntry entry)
     {
