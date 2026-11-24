@@ -1,6 +1,6 @@
-# Bitcoin Hashrate Benchmark v1.0.0
+# Bitcoin Hashrate Benchmark v1.0.1
 
-**Stable release**
+**Latest stable release**
 
 > **Created by Andrew Miller** — building cross-platform apps and learning through hands-on projects.
 >
@@ -34,6 +34,10 @@ npm run deploy
 For Cloudflare Workers Builds, connect this repository's `main` branch to a Worker and set its deploy command to `npm run deploy`. Every deployment applies pending D1 migrations before publishing the Worker. The deployment serves the browser benchmark and API together. Open its `workers.dev` URL to use the online board. In the Windows app, paste that URL into **Service URL**; it is saved locally on that PC. Public leaderboard data is visible to anyone, and the API accepts only unverified submissions.
 
 Run the API checks locally with `npm run test:leaderboard`.
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release notes.
 
 ## Compare results carefully
 
