@@ -2,6 +2,12 @@
 
 **Stable release**
 
+> **Created by Andrew Miller** — building cross-platform apps and learning through hands-on projects.
+>
+> I hope this benchmark helps people compare device performance, learn about SHA-256, and explore how software works across platforms.
+>
+> **AI coding support:** Copilot Fusion
+
 A local benchmark for comparing how devices perform SHA-256 double hashing. The Windows desktop app and standalone browser version are for learning and performance testing only. The Windows app can be published for x64 and ARM64; the browser version can run on compatible Windows, Android, and iOS browsers, including on ARM32 and ARM64 devices.
 
 ## What this measures
@@ -45,8 +51,3 @@ dotnet publish .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj -c Rel
 ```
 
 Use `win-arm64` in place of `win-x64` to publish the smaller ARM64 build. The self-contained apps are in `BitcoinHashrateBenchmark\bin\Release\net10.0-windows\<runtime>\publish`, where `<runtime>` is `win-x64` or `win-arm64`. Framework-dependent builds are much smaller but require the matching .NET 10 Desktop Runtime on the PC. The current .NET 10 Windows desktop project does not provide a native ARM32 target; use the browser version on ARM32 Windows devices with a compatible browser.
-
-## Credits
-
-- Idea: Andrew Miller
-- AI coding: Copilot Fusion
