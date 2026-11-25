@@ -1,0 +1,75 @@
+name: Windows unstable release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime:
+          - win-x64
+          - win-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Read app version
+        id: app-version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content "BitcoinHashrateBenchmark/BitcoinHashrateBenchmark.csproj"
+          $version = $project.Project.PropertyGroup.Version
+          "version=$version" >> $env:GITHUB_OUTPUT
+          if ($env:GITHUB_REF_TYPE -eq "tag" -and $env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match app version v$version."
+          }
+      - name: Publish self-contained executable
+        run: dotnet publish BitcoinHashrateBenchmark/BitcoinHashrateBenchmark.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o "publish/${{ matrix.runtime }}"
+      - name: Name release executable
+        shell: pwsh
+        env:
+          RUNTIME: ${{ matrix.runtime }}
+          VERSION: ${{ steps.app-version.outputs.version }}
+        run: |
+          $source = "publish/$env:RUNTIME/BitcoinHashrateBenchmark.exe"
+          if (-not (Test-Path $source)) { throw "Published executable not found: $source" }
+          Rename-Item $source "BitcoinHashrateBenchmark-v$env:VERSION-$env:RUNTIME.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.runtime }}
+          path: publish/${{ matrix.runtime }}/*.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: windows-*
+          path: release-assets
+          merge-multiple: true
+      - name: Add standalone browser app
+        run: cp ChromebookHashrateBenchmark/index.html release-assets/index.html
+      - name: Create unstable pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --title "Bitcoin Hashrate Benchmark $GITHUB_REF_NAME UNSTABLE beta" \
+            --prerelease \
+            --verify-tag \
+            --notes "UNSTABLE BETA: GPU benchmarking is experimental and may fail or produce inaccurate results. Stop if your device gets hot or sluggish. Public results are unverified. GPU support requires compatible hardware and drivers; CPU and GPU scores are ranked separately."

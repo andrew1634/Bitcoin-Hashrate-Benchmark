@@ -7,6 +7,8 @@ internal sealed record LeaderboardSubmission(
     string CpuModel,
     string Architecture,
     string Source,
+    string BenchmarkType,
+    string Backend,
     long Hashes,
     double ElapsedSeconds,
     int ThreadCount);
@@ -21,7 +23,11 @@ internal sealed record LeaderboardEntry(
     double HashesPerSecond,
     DateTimeOffset SubmittedAt,
     string VerificationStatus,
-    int CategoryRank);
+    int CategoryRank)
+{
+    public string BenchmarkType { get; init; } = "cpu";
+    public string Backend { get; init; } = "unknown";
+}
 
 internal sealed record LeaderboardResponse(List<LeaderboardEntry> Entries);
 
@@ -36,10 +42,11 @@ internal static class LeaderboardClient
 
     public static async Task<List<LeaderboardEntry>> GetAsync(
         string serviceUrl,
+        string benchmarkType,
         CancellationToken cancellationToken = default)
     {
         using var response = await Http.GetAsync(
-            BuildUri(serviceUrl, "leaderboard?sort=performance"),
+            BuildUri(serviceUrl, $"leaderboard?type={Uri.EscapeDataString(benchmarkType)}&sort=performance"),
             cancellationToken);
         response.EnsureSuccessStatusCode();
 

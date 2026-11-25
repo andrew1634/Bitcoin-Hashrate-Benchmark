@@ -1,5 +1,10 @@
 const architectures = new Set(["ARM64", "ARM32", "x64", "x86", "Other", "Unknown"]);
 const sources = new Set(["browser", "windows"]);
+const benchmarkTypes = new Set(["cpu", "gpu"]);
+const backendsByType = {
+  cpu: new Set(["unknown", "browser-webcrypto", "windows-sha256"]),
+  gpu: new Set(["webgpu", "webgl2", "direct3d12"])
+};
 const maxEntries = 100;
 const maxModelLength = 100;
 const corsHeaders = {
@@ -30,18 +35,28 @@ function normalizeSubmission(value) {
     return { error: "The submission must be a JSON object." };
   }
 
-  const { cpuModel, architecture, source, hashes, elapsedSeconds, threadCount } = value;
+  const {
+    cpuModel, architecture, source, hashes, elapsedSeconds, threadCount
+  } = value;
+  const benchmarkType = value.benchmarkType ?? "cpu";
+  const backend = value.backend ?? "unknown";
   if (typeof cpuModel !== "string" || cpuModel.trim().length > maxModelLength) {
-    return { error: `CPU model must be a string no longer than ${maxModelLength} characters.` };
+    return { error: `Device model must be a string no longer than ${maxModelLength} characters.` };
   }
   if ([...cpuModel].some((character) => character.charCodeAt(0) < 32)) {
-    return { error: "CPU model cannot contain control characters." };
+    return { error: "Device model cannot contain control characters." };
   }
   if (!architectures.has(architecture)) {
     return { error: "Architecture is not supported." };
   }
   if (!sources.has(source)) {
     return { error: "Submission source is not supported." };
+  }
+  if (!benchmarkTypes.has(benchmarkType)) {
+    return { error: "Benchmark type is not supported." };
+  }
+  if (!backendsByType[benchmarkType].has(backend)) {
+    return { error: "Benchmark backend is not supported for this benchmark type." };
   }
   if (!Number.isSafeInteger(hashes) || hashes < 1) {
     return { error: "Hashes must be a positive whole number." };
@@ -63,6 +78,8 @@ function normalizeSubmission(value) {
       cpuModel: cpuModel.trim() || "Unreported",
       architecture,
       source,
+      benchmarkType,
+      backend,
       hashes,
       elapsedSeconds,
       threadCount,
@@ -100,6 +117,10 @@ async function readLimitedBody(request, maxBytes) {
 async function getLeaderboard(request, db) {
   const url = new URL(request.url);
   const sort = url.searchParams.get("sort") === "newest" ? "newest" : "performance";
+  const benchmarkType = url.searchParams.get("type") ?? "cpu";
+  if (!benchmarkTypes.has(benchmarkType)) {
+    return error("Benchmark type must be cpu or gpu.", 400);
+  }
   const requestedLimit = Number(url.searchParams.get("limit") ?? maxEntries);
   const limit = Number.isSafeInteger(requestedLimit)
     ? Math.max(1, Math.min(requestedLimit, maxEntries))
@@ -108,18 +129,20 @@ async function getLeaderboard(request, db) {
     ? "submitted_at DESC, hashes_per_second DESC, id ASC"
     : "hashes_per_second DESC, submitted_at ASC, id ASC";
   const statement = db.prepare(`
-    SELECT id, cpu_model AS cpuModel, architecture, source, hashes,
+    SELECT id, cpu_model AS cpuModel, architecture, source,
+      benchmark_type AS benchmarkType, backend, hashes,
       elapsed_seconds AS elapsedSeconds, thread_count AS threadCount,
       hashes_per_second AS hashesPerSecond, submitted_at AS submittedAt,
       verification_status AS verificationStatus,
       ROW_NUMBER() OVER (
-        PARTITION BY architecture
+        PARTITION BY benchmark_type, backend, architecture
         ORDER BY hashes_per_second DESC, submitted_at ASC, id ASC
       ) AS categoryRank
     FROM leaderboard_entries
+    WHERE benchmark_type = ?
     ORDER BY ${orderBy}
     LIMIT ?
-  `).bind(limit);
+  `).bind(benchmarkType, limit);
   const result = await statement.all();
   return respond({ entries: result.results ?? [] });
 }
@@ -152,14 +175,16 @@ async function submit(request, env) {
   const submittedAt = new Date().toISOString();
   await env.DB.prepare(`
     INSERT INTO leaderboard_entries (
-      id, cpu_model, architecture, source, hashes, elapsed_seconds,
-      thread_count, hashes_per_second, submitted_at, verification_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')
+      id, cpu_model, architecture, source, benchmark_type, backend, hashes,
+      elapsed_seconds, thread_count, hashes_per_second, submitted_at, verification_status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')
   `).bind(
     id,
     entry.cpuModel,
     entry.architecture,
     entry.source,
+    entry.benchmarkType,
+    entry.backend,
     entry.hashes,
     entry.elapsedSeconds,
     entry.threadCount,

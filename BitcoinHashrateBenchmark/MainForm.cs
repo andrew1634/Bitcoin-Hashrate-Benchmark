@@ -14,6 +14,7 @@ internal sealed class MainForm : Form
     private static readonly Color AccentColor = SystemColors.Highlight;
 
     private readonly ComboBox durationBox = new();
+    private readonly ComboBox benchmarkModeBox = new();
     private readonly NumericUpDown threadCountBox = new();
     private readonly Button startButton = new();
     private readonly Button clearHistoryButton = new();
@@ -22,9 +23,12 @@ internal sealed class MainForm : Form
     private readonly TextBox leaderboardUrlBox = new();
     private readonly TextBox cpuModelBox = new();
     private readonly ComboBox architectureBox = new();
+    private readonly ComboBox leaderboardTypeBox = new();
     private readonly Label statusLabel = new();
     private readonly Label historyStatusLabel = new();
     private readonly Label leaderboardStatusLabel = new();
+    private readonly Label deviceModelCaption = new();
+    private readonly Label threadCountCaption = new();
     private readonly ListBox historyList = new();
     private readonly ListBox leaderboardList = new();
     private Label rateLabel = new();
@@ -39,10 +43,13 @@ internal sealed class MainForm : Form
     private BenchmarkResult? latestResult;
     private long latestHashes;
     private int selectedSeconds;
+    private int latestThreadCount;
+    private string latestBenchmarkType = "cpu";
+    private string latestBackend = "windows-sha256";
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.4 beta";
+        Text = "Bitcoin Hashrate Benchmark v1.0.5 UNSTABLE";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);
@@ -76,7 +83,7 @@ internal sealed class MainForm : Form
             BackColor = BackgroundColor
         };
         benchmarkLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 148));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
@@ -95,11 +102,19 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Local CPU SHA-256 benchmark · Version 1.0.4 beta",
+            Text = "Local CPU/GPU SHA-256 benchmark · Version 1.0.5 UNSTABLE",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
             Location = new Point(2, 36)
+        });
+        heading.Controls.Add(new Label
+        {
+            Text = "UNSTABLE BETA: GPU results may be inaccurate; stop if your device gets hot or sluggish.",
+            Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+            ForeColor = Color.FromArgb(150, 70, 0),
+            AutoSize = true,
+            Location = new Point(2, 61)
         });
         benchmarkLayout.Controls.Add(heading, 0, 0);
 
@@ -108,24 +123,34 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(14, 8, 14, 8),
-            ColumnCount = 4,
+            ColumnCount = 3,
             RowCount = 2,
             BackColor = PanelColor
         };
-        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 16));
-        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 1));
+        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         settings.Controls.Add(settingsGrid);
-        settingsGrid.Controls.Add(CreateCaption("TEST DURATION"), 0, 0);
-        settingsGrid.Controls.Add(CreateCaption("CPU THREADS"), 2, 0);
+        settingsGrid.Controls.Add(CreateCaption("BENCHMARK DEVICE"), 0, 0);
+        settingsGrid.Controls.Add(CreateCaption("TEST DURATION"), 1, 0);
+        threadCountCaption.Text = "CPU THREADS";
+        threadCountCaption.Dock = DockStyle.Fill;
+        threadCountCaption.TextAlign = ContentAlignment.BottomLeft;
+        threadCountCaption.ForeColor = MutedColor;
+        settingsGrid.Controls.Add(threadCountCaption, 2, 0);
+        benchmarkModeBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        benchmarkModeBox.Items.AddRange(["CPU", "GPU (Direct3D 12)"]);
+        benchmarkModeBox.SelectedIndex = 0;
+        StyleInput(benchmarkModeBox);
+        benchmarkModeBox.SelectedIndexChanged += (_, _) => UpdateBenchmarkMode();
+        settingsGrid.Controls.Add(benchmarkModeBox, 0, 1);
         durationBox.DropDownStyle = ComboBoxStyle.DropDownList;
         durationBox.Items.AddRange(["5 seconds", "10 seconds", "30 seconds"]);
         durationBox.SelectedIndex = 1;
         StyleInput(durationBox);
-        settingsGrid.Controls.Add(durationBox, 0, 1);
+        settingsGrid.Controls.Add(durationBox, 1, 1);
         threadCountBox.Minimum = 1;
         threadCountBox.Maximum = Math.Max(1, Environment.ProcessorCount);
         threadCountBox.Value = Math.Max(1, Environment.ProcessorCount);
@@ -285,7 +310,11 @@ internal sealed class MainForm : Form
         deviceDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
         deviceDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
         deviceDetails.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        deviceDetails.Controls.Add(CreateCaption("CPU MODEL (EDITABLE)"), 0, 0);
+        deviceModelCaption.Text = "CPU MODEL (EDITABLE)";
+        deviceModelCaption.Dock = DockStyle.Fill;
+        deviceModelCaption.TextAlign = ContentAlignment.BottomLeft;
+        deviceModelCaption.ForeColor = MutedColor;
+        deviceDetails.Controls.Add(deviceModelCaption, 0, 0);
         deviceDetails.Controls.Add(CreateCaption("ARCHITECTURE"), 2, 0);
         cpuModelBox.Text = DetectCpuModel();
         cpuModelBox.AccessibleName = "CPU model; edit before submitting if incorrect";
@@ -313,6 +342,13 @@ internal sealed class MainForm : Form
         submitLeaderboardButton.Height = 36;
         submitLeaderboardButton.Click += async (_, _) => await SubmitLatestRunAsync();
         leaderboardActions.Controls.Add(submitLeaderboardButton);
+        leaderboardTypeBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        leaderboardTypeBox.Items.AddRange(["CPU", "GPU"]);
+        leaderboardTypeBox.SelectedIndex = 0;
+        leaderboardTypeBox.Width = 80;
+        leaderboardTypeBox.Height = 36;
+        leaderboardTypeBox.SelectedIndexChanged += async (_, _) => await RefreshLeaderboardAsync();
+        leaderboardActions.Controls.Add(leaderboardTypeBox);
         refreshLeaderboardButton.Text = "Refresh results";
         refreshLeaderboardButton.Width = 120;
         refreshLeaderboardButton.Height = 36;
@@ -349,6 +385,18 @@ internal sealed class MainForm : Form
             2 => 30,
             _ => 10
         };
+        var previousBenchmarkType = latestBenchmarkType;
+        var hadLatestResult = latestResult.HasValue;
+        var useGpu = benchmarkModeBox.SelectedIndex == 1;
+        var nextBenchmarkType = useGpu ? "gpu" : "cpu";
+        if (hadLatestResult && previousBenchmarkType != nextBenchmarkType)
+        {
+            deviceModelCaption.Text = useGpu ? "GPU MODEL (EDITABLE)" : "CPU MODEL (EDITABLE)";
+            cpuModelBox.Text = useGpu ? "Unreported GPU" : DetectCpuModel();
+        }
+        latestBenchmarkType = nextBenchmarkType;
+        latestBackend = useGpu ? GpuHashRateBenchmark.Backend : "windows-sha256";
+        latestThreadCount = useGpu ? 1 : (int)threadCountBox.Value;
         latestResult = null;
         submitLeaderboardButton.Enabled = false;
         latestHashes = 0;
@@ -361,27 +409,34 @@ internal sealed class MainForm : Form
         runStopwatch = Stopwatch.StartNew();
         displayTimer.Start();
         startButton.Text = "Stop benchmark";
-        statusLabel.Text = $"Running for {selectedSeconds} seconds...";
+        statusLabel.Text = $"Running {latestBenchmarkType.ToUpperInvariant()} benchmark for {selectedSeconds} seconds...";
         SetInputsEnabled(false);
 
         var progress = new Progress<BenchmarkProgress>(UpdateProgress);
 
         try
         {
-            var result = await HashRateBenchmark.RunAsync(
-                TimeSpan.FromSeconds(selectedSeconds),
-                (int)threadCountBox.Value,
-                progress,
-                runCancellation.Token);
+            var duration = TimeSpan.FromSeconds(selectedSeconds);
+            var result = useGpu
+                ? await GpuHashRateBenchmark.RunAsync(duration, progress, runCancellation.Token)
+                : await HashRateBenchmark.RunAsync(
+                    duration,
+                    latestThreadCount,
+                    progress,
+                    runCancellation.Token);
             UpdateProgress(new BenchmarkProgress(result.Hashes, result.Elapsed));
             statusLabel.Text = runCancellation.IsCancellationRequested
                 ? "Benchmark stopped."
                 : "Benchmark complete.";
             SaveHistory(new BenchmarkHistoryEntry(
                 DateTimeOffset.Now,
-                (int)threadCountBox.Value,
+                latestThreadCount,
                 result.Hashes,
-                result.Elapsed.TotalSeconds));
+                result.Elapsed.TotalSeconds)
+            {
+                BenchmarkType = latestBenchmarkType,
+                Backend = latestBackend
+            });
             if (!runCancellation.IsCancellationRequested)
             {
                 latestResult = result;
@@ -440,8 +495,30 @@ internal sealed class MainForm : Form
 
     private void SetInputsEnabled(bool enabled)
     {
+        benchmarkModeBox.Enabled = enabled;
         durationBox.Enabled = enabled;
-        threadCountBox.Enabled = enabled;
+        threadCountBox.Enabled = enabled && benchmarkModeBox.SelectedIndex == 0;
+    }
+
+    private void UpdateBenchmarkMode()
+    {
+        var gpuSelected = benchmarkModeBox.SelectedIndex == 1;
+        threadCountBox.Enabled = !gpuSelected && runCancellation is null;
+        threadCountCaption.Text = gpuSelected ? "GPU DISPATCH" : "CPU THREADS";
+        if (latestResult.HasValue)
+        {
+            statusLabel.Text = $"Device details describe the latest {latestBenchmarkType.ToUpperInvariant()} run.";
+            return;
+        }
+
+        deviceModelCaption.Text = gpuSelected ? "GPU MODEL (EDITABLE)" : "CPU MODEL (EDITABLE)";
+        cpuModelBox.Text = gpuSelected ? "Unreported GPU" : DetectCpuModel();
+        if (runCancellation is null)
+        {
+            statusLabel.Text = gpuSelected
+                ? "Requires a Direct3D 12 GPU. Stop if your device gets hot or sluggish."
+                : "Ready when you are.";
+        }
     }
 
     private void LoadHistory()
@@ -451,7 +528,8 @@ internal sealed class MainForm : Form
             RenderHistory(historyStore.Load());
             historyStatusLabel.Text = "Saved locally on this PC.";
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception exception) when (
+            exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
         {
             clearHistoryButton.Enabled = true;
             historyStatusLabel.Text = $"Could not load history; use Clear to remove it: {exception.Message}";
@@ -477,20 +555,22 @@ internal sealed class MainForm : Form
             SaveLeaderboardUrl();
             refreshLeaderboardButton.Enabled = false;
             leaderboardStatusLabel.Text = "Loading public results...";
-            var entries = await LeaderboardClient.GetAsync(leaderboardUrlBox.Text);
+            var benchmarkType = leaderboardTypeBox.SelectedItem?.ToString()?.ToLowerInvariant() ?? "cpu";
+            var entries = await LeaderboardClient.GetAsync(leaderboardUrlBox.Text, benchmarkType);
             leaderboardList.BeginUpdate();
             leaderboardList.Items.Clear();
             foreach (var entry in entries)
             {
                 var crown = entry.CategoryRank == 1 ? "👑 " : "";
                 leaderboardList.Items.Add(
-                    $"{crown}{entry.HashesPerSecond:N0} H/s | {entry.Architecture} | {entry.CpuModel} | "
-                    + $"{entry.SubmittedAt.LocalDateTime:g} | {entry.VerificationStatus}");
+                    $"{crown}{entry.HashesPerSecond:N0} H/s | {entry.BenchmarkType.ToUpperInvariant()} · {entry.Backend} | "
+                    + $"{entry.Architecture} | {entry.CpuModel} | {entry.SubmittedAt.LocalDateTime:g} | "
+                    + $"{entry.VerificationStatus}");
             }
             leaderboardList.EndUpdate();
             leaderboardStatusLabel.Text = entries.Count == 0
                 ? "No public results yet."
-                : $"Showing {entries.Count} results, sorted by hashes per second.";
+                : $"Showing {entries.Count} {benchmarkType.ToUpperInvariant()} results, sorted by hashes per second.";
         }
         catch (Exception exception) when (
             exception is HttpRequestException or UriFormatException or JsonException or TaskCanceledException or
@@ -514,7 +594,8 @@ internal sealed class MainForm : Form
 
         var confirmation = MessageBox.Show(
             this,
-            "This will publicly share your CPU model, architecture, hash count, speed, thread count, "
+            $"This will publicly share your {(latestBenchmarkType == "gpu" ? "GPU" : "CPU")} model, architecture, "
+            + "benchmark type, backend, hash count, speed, thread count, "
             + "and submission date. The result will be marked unverified. Continue?",
             "Submit public result",
             MessageBoxButtons.YesNo,
@@ -532,9 +613,11 @@ internal sealed class MainForm : Form
                     string.IsNullOrWhiteSpace(cpuModelBox.Text) ? "Unreported" : cpuModelBox.Text.Trim(),
                     architectureBox.SelectedItem?.ToString() ?? "Unknown",
                     "windows",
+                    latestBenchmarkType,
+                    latestBackend,
                     result.Hashes,
                     result.Elapsed.TotalSeconds,
-                    (int)threadCountBox.Value));
+                    latestThreadCount));
             leaderboardStatusLabel.Text = "Result submitted as unverified.";
             await RefreshLeaderboardAsync();
         }
@@ -590,7 +673,8 @@ internal sealed class MainForm : Form
             RenderHistory(historyStore.Add(entry));
             historyStatusLabel.Text = "Run saved locally.";
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        catch (Exception exception) when (
+            exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
         {
             historyStatusLabel.Text = $"Could not save history: {exception.Message}";
         }
@@ -616,9 +700,14 @@ internal sealed class MainForm : Form
         historyList.Items.Clear();
         foreach (var entry in entries)
         {
+            var benchmarkType = entry.BenchmarkType.ToUpperInvariant();
+            var benchmarkDetails = entry.BenchmarkType == "cpu"
+                ? $"{entry.ThreadCount} threads"
+                : entry.Backend;
             historyList.Items.Add(
-                $"{entry.CompletedAt.LocalDateTime:g} | {entry.ElapsedSeconds:F1} s | "
-                + $"{entry.ThreadCount} threads | {entry.Hashes:N0} hashes | {FormatRate(entry.HashesPerSecond)}");
+                $"{entry.CompletedAt.LocalDateTime:g} | {benchmarkType} · {entry.Backend} | "
+                + $"{entry.ElapsedSeconds:F1} s | {benchmarkDetails} | {entry.Hashes:N0} hashes | "
+                + $"{FormatRate(entry.HashesPerSecond)}");
         }
         historyList.EndUpdate();
         clearHistoryButton.Enabled = historyList.Items.Count > 0;

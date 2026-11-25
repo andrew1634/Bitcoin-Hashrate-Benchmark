@@ -2,6 +2,21 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.5] - Unstable Beta
+
+### Added
+
+- Optional browser GPU benchmarking using WebGPU with WebGL2 fallback.
+- Optional Windows Direct3D 12 GPU benchmarking on hardware-accelerated supported adapters.
+- Separate CPU and GPU public leaderboard rankings, including backend labels.
+- Persistent unstable-beta notice and GPU heat/performance warning in both apps.
+
+### Notes
+
+- GPU results remain unverified and are not directly comparable across different backends.
+- WebGPU and Direct3D 12 require supported devices and drivers; unsupported hardware reports an error instead of silently switching to CPU.
+- This release is experimental; GPU mode has not been validated on every supported device.
+
 ## [1.0.4] - Beta
 
 ### Changed

@@ -15,29 +15,33 @@ class TestDatabase {
           this.boundValues = values;
           assert.match(query, /ROW_NUMBER\(\) OVER/);
           assert.match(query, /LIMIT \?/);
-          const ordered = [...this.entries].sort((first, second) =>
+          assert.match(query, /WHERE benchmark_type = \?/);
+          const [benchmarkType, limit] = values;
+          const matchingEntries = this.entries.filter((entry) => entry.benchmarkType === benchmarkType);
+          const ordered = [...matchingEntries].sort((first, second) =>
             query.includes("submitted_at DESC, hashes_per_second DESC")
               ? second.submittedAt.localeCompare(first.submittedAt)
                 || second.hashesPerSecond - first.hashesPerSecond
               : second.hashesPerSecond - first.hashesPerSecond
                 || first.submittedAt.localeCompare(second.submittedAt));
           const categoryRanks = new Map();
-          for (const entry of [...this.entries].sort((first, second) =>
+          for (const entry of [...matchingEntries].sort((first, second) =>
             second.hashesPerSecond - first.hashesPerSecond
               || first.submittedAt.localeCompare(second.submittedAt))) {
-            const rank = (categoryRanks.get(entry.architecture) ?? 0) + 1;
-            categoryRanks.set(entry.architecture, rank);
+            const category = `${entry.benchmarkType}:${entry.backend}:${entry.architecture}`;
+            const rank = (categoryRanks.get(category) ?? 0) + 1;
+            categoryRanks.set(category, rank);
             entry.categoryRank = rank;
           }
-          return { results: ordered.slice(0, values[0]) };
+          return { results: ordered.slice(0, limit) };
         },
         run: async () => {
           const [
-            id, cpuModel, architecture, source, hashes, elapsedSeconds,
-            threadCount, hashesPerSecond, submittedAt
+            id, cpuModel, architecture, source, benchmarkType, backend, hashes,
+            elapsedSeconds, threadCount, hashesPerSecond, submittedAt
           ] = values;
           this.entries.push({
-            id, cpuModel, architecture, source, hashes, elapsedSeconds,
+            id, cpuModel, architecture, source, benchmarkType, backend, hashes, elapsedSeconds,
             threadCount, hashesPerSecond, submittedAt, verificationStatus: "unverified"
           });
           return { success: true };
@@ -99,7 +103,9 @@ test("rejects malformed or out-of-range submissions", async () => {
     { ...validSubmission, architecture: "riscv" },
     { ...validSubmission, hashes: -1 },
     { ...validSubmission, elapsedSeconds: 0.5 },
-    { ...validSubmission, threadCount: 257 }
+    { ...validSubmission, threadCount: 257 },
+    { ...validSubmission, benchmarkType: "gpu", backend: "browser-webcrypto" },
+    { ...validSubmission, benchmarkType: "asic", backend: "direct3d12" }
   ]) {
     const response = await worker.fetch(
       makeRequest("/api/submissions", "POST", body),
@@ -122,6 +128,54 @@ test("stores accepted entries as unverified and timestamps them on the server", 
   assert.ok(Number.isFinite(Date.parse(result.submittedAt)));
   assert.equal(db.entries.length, 1);
   assert.equal(db.entries[0].hashesPerSecond, 1_200);
+  assert.equal(db.entries[0].benchmarkType, "cpu");
+  assert.equal(db.entries[0].backend, "unknown");
+});
+
+test("keeps GPU leaderboard results separate from CPU results", async () => {
+  const db = new TestDatabase();
+  for (const submission of [
+    { ...validSubmission, hashes: 12_000 },
+    { ...validSubmission, benchmarkType: "gpu", backend: "webgpu", hashes: 120_000 },
+    { ...validSubmission, benchmarkType: "gpu", backend: "webgl2", hashes: 240_000 },
+    {
+      ...validSubmission,
+      source: "windows",
+      architecture: "x64",
+      benchmarkType: "gpu",
+      backend: "direct3d12",
+      hashes: 360_000
+    }
+  ]) {
+    const response = await worker.fetch(
+      makeRequest("/api/submissions", "POST", submission),
+      environment(db)
+    );
+    assert.equal(response.status, 201);
+  }
+
+  const cpuResponse = await worker.fetch(
+    makeRequest("/api/leaderboard?type=cpu"),
+    environment(db)
+  );
+  const gpuResponse = await worker.fetch(
+    makeRequest("/api/leaderboard?type=gpu"),
+    environment(db)
+  );
+  const cpuEntries = (await cpuResponse.json()).entries;
+  const gpuEntries = (await gpuResponse.json()).entries;
+
+  assert.equal(cpuEntries.length, 1);
+  assert.equal(cpuEntries[0].benchmarkType, "cpu");
+  assert.equal(cpuEntries[0].categoryRank, 1);
+  assert.equal(gpuEntries.length, 3);
+  const webGpuEntry = gpuEntries.find((entry) => entry.backend === "webgpu");
+  const webGlEntry = gpuEntries.find((entry) => entry.backend === "webgl2");
+  const direct3dEntry = gpuEntries.find((entry) => entry.backend === "direct3d12");
+  assert.equal(webGpuEntry.benchmarkType, "gpu");
+  assert.equal(webGpuEntry.categoryRank, 1);
+  assert.equal(webGlEntry.categoryRank, 1);
+  assert.equal(direct3dEntry.categoryRank, 1);
 });
 
 test("ranks category leaders while returning results sorted by performance", async () => {
@@ -158,7 +212,15 @@ test("returns a bounded leaderboard with a supported sort order", async () => {
   assert.equal(response.headers.get("access-control-allow-origin"), "*");
   assert.deepEqual(await response.json(), { entries: [] });
   assert.match(db.query, /ORDER BY submitted_at DESC/);
-  assert.equal(db.boundValues[0], 100);
+  assert.deepEqual(db.boundValues, ["cpu", 100]);
+});
+
+test("rejects unsupported leaderboard benchmark types", async () => {
+  const response = await worker.fetch(
+    makeRequest("/api/leaderboard?type=asic"),
+    environment()
+  );
+  assert.equal(response.status, 400);
 });
 
 test("caps oversized request bodies before parsing or writing", async () => {
