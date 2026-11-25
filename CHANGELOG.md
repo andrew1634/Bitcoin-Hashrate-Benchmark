@@ -2,6 +2,16 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.9] - Unstable Beta
+
+### Browser updates
+
+- Fixed developer settings being visible before code verification; the title now opens a hidden developer-settings dialog.
+- Simplified the browser layout and moved appearance/custom options behind the server-validated, session-only unlock.
+- Added developer-gated browser memory bandwidth and randomized latency tests with separate bounded working-set settings.
+- Matched standard browser durations to Windows and kept browser memory history local-only.
+- Made browser memory bandwidth runs responsive to Stop, including infinite-duration runs.
+
 ## [1.0.8] - Unstable Beta
 
 ### Added

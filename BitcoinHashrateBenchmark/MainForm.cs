@@ -73,7 +73,7 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.8 UNSTABLE";
+        Text = "Bitcoin Hashrate Benchmark v1.0.9 UNSTABLE";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);

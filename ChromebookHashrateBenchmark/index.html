@@ -1,29 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark v1.0.8 UNSTABLE</title>
+  <meta name="color-scheme" content="light">
+  <title>Browser Hashrate Benchmark v1.0.9 UNSTABLE</title>
   <style>
     :root {
-      color-scheme: dark;
+      color-scheme: light;
       font-family: system-ui, sans-serif;
-      background: #0b1120;
-      color: #f8fafc;
+      background: #e9edf0;
+      color: #1d2933;
       font-synthesis: none;
-      --user-accent: #4ade80;
-      --user-accent-strong: #22c55e;
+      --user-accent: #287a50;
+      --user-accent-strong: #206541;
     }
 
     body {
       box-sizing: border-box;
       min-height: 100vh;
       margin: 0 auto;
-      padding: 36px 20px;
-      background:
-        radial-gradient(ellipse at 12% 0%, rgb(34 197 94 / 12%), transparent 34rem),
-        radial-gradient(ellipse at 100% 35%, rgb(59 130 246 / 9%), transparent 32rem);
+      padding: 28px 20px;
+      background: #e9edf0;
     }
 
     .app-shell { max-width: 800px; margin: 0 auto; }
@@ -34,7 +32,7 @@
     }
 
     .topline, .section-heading { justify-content: space-between; }
-    .topline { margin-bottom: 52px; }
+    .topline { margin-bottom: 24px; }
     .brand { gap: 12px; }
 
     .brand-mark {
@@ -42,11 +40,11 @@
       width: 38px;
       height: 38px;
       place-items: center;
-      border: 1px solid rgb(74 222 128 / 30%);
-      border-radius: 12px;
-      background: rgb(34 197 94 / 12%);
+      border: 1px solid #aac9b7;
+      border-radius: 8px;
+      background: #e4efe8;
       color: var(--user-accent);
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 800;
     }
 
@@ -61,29 +59,28 @@
     .local-pill {
       gap: 8px;
       padding: 8px 11px;
-      border: 1px solid #334155;
+      border: 1px solid #cbd4da;
       border-radius: 999px;
-      background: rgb(15 23 42 / 65%);
-      color: #cbd5e1;
+      background: #fff;
+      color: #475569;
     }
 
     .local-pill::before {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 12px rgb(74 222 128 / 70%);
+      background: var(--user-accent);
       content: "";
     }
 
-    .hero { margin-bottom: 28px; }
+    .hero { margin-bottom: 22px; }
     .unstable-notice {
       margin: 0 0 24px;
       padding: 16px 18px;
       border: 1px solid rgb(251 191 36 / 40%);
-      border-radius: 12px;
-      background: rgb(120 53 15 / 28%);
-      color: #fde68a;
+      border-radius: 7px;
+      background: #fff5dc;
+      color: #684500;
     }
 
     .unstable-notice strong {
@@ -92,45 +89,42 @@
       letter-spacing: 0.06em;
     }
 
-    .unstable-notice p { margin: 0; color: #fcdba3; }
+    .unstable-notice p { margin: 0; color: #684500; }
 
     h1 {
       margin: 0 0 14px;
-      font-size: clamp(2.2rem, 7vw, 3.6rem);
-      line-height: 1.06;
-      letter-spacing: -0.055em;
+      font-size: clamp(2rem, 6vw, 3rem);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
     }
 
     h1 span {
-      background: linear-gradient(90deg, var(--user-accent), #a3e635);
-      background-clip: text;
-      color: transparent;
+      color: var(--user-accent);
     }
 
-    p { color: #b6c2d2; line-height: 1.7; }
+    p { color: #475569; line-height: 1.6; }
     .hero p { max-width: 590px; margin: 0; font-size: 1.02rem; }
 
     .card {
       margin: 16px 0;
       padding: 24px;
-      border: 1px solid rgb(148 163 184 / 14%);
-      border-radius: 18px;
-      background: linear-gradient(145deg, rgb(30 41 59 / 94%), rgb(15 23 42 / 92%));
-      box-shadow: 0 18px 50px rgb(0 0 0 / 18%);
+      border: 1px solid #cbd4da;
+      border-radius: 8px;
+      background: #fff;
     }
 
     .section-heading { margin-bottom: 20px; }
     h2 { margin: 0; font-size: 1rem; letter-spacing: -0.015em; }
     .settings, .metrics {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
     }
 
     label, .metric-label {
       display: block;
       margin-bottom: 9px;
-      color: #94a3b8;
+      color: #64748b;
       font-size: 0.72rem;
       font-weight: 750;
       letter-spacing: 0.1em;
@@ -141,31 +135,31 @@
       width: 100%;
       min-height: 48px;
       padding: 11px 14px;
-      border: 1px solid #3b4b62;
-      border-radius: 10px;
-      background: #111c30;
-      color: #f8fafc;
+      border: 1px solid #aebac2;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2933;
       font: inherit;
     }
 
     select:focus-visible, button:focus-visible {
-      outline: 3px solid rgb(74 222 128 / 65%);
+      outline: 3px solid rgb(40 122 80 / 35%);
       outline-offset: 2px;
     }
 
     .metric {
       min-width: 0;
       padding: 17px;
-      border: 1px solid rgb(148 163 184 / 12%);
-      border-radius: 13px;
-      background: rgb(15 23 42 / 55%);
+      border: 1px solid #d5dde2;
+      border-radius: 7px;
+      background: #f5f7f8;
     }
 
     .metric:first-child {
       grid-column: 1 / -1;
       padding: 21px;
-      border-color: rgb(74 222 128 / 24%);
-      background: linear-gradient(110deg, rgb(34 197 94 / 11%), rgb(15 23 42 / 58%));
+      border-color: #b2cdbd;
+      background: #f0f6f2;
     }
 
     .metric-value {
@@ -176,7 +170,7 @@
     }
 
     .metric:first-child .metric-value {
-      color: #86efac;
+      color: #1f6842;
       font-size: clamp(2rem, 7vw, 3rem);
     }
 
@@ -188,31 +182,55 @@
       overflow: hidden;
       border: 0;
       border-radius: 99px;
-      background: #334155;
+      background: #d3dce1;
       accent-color: var(--user-accent);
     }
 
-    progress::-webkit-progress-bar { border-radius: 99px; background: #334155; }
+    progress::-webkit-progress-bar { border-radius: 99px; background: #d3dce1; }
     progress::-webkit-progress-value {
       border-radius: 99px;
-      background: linear-gradient(90deg, var(--user-accent-strong), #a3e635);
+      background: var(--user-accent-strong);
       transition: width 180ms ease;
     }
 
     button {
-      border: 0;
-      background: linear-gradient(100deg, var(--user-accent), #a3e635);
-      color: #082313;
+      border: 1px solid var(--user-accent-strong);
+      border-radius: 6px;
+      background: var(--user-accent);
+      color: #fff;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 8px 22px rgb(34 197 94 / 18%);
-      transition: filter 150ms ease, transform 150ms ease;
+      transition: background-color 120ms ease;
     }
 
-    button:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
-    button:active:not(:disabled) { transform: translateY(0); }
-    button.is-running { background: linear-gradient(100deg, #fb7185, #f97316); color: #fff7ed; }
+    button:hover:not(:disabled) { background: var(--user-accent-strong); }
+    button.is-running { border-color: #a13824; background: #b7462e; color: #fff; }
     button:disabled, select:disabled { cursor: not-allowed; opacity: 0.65; }
+    [hidden] { display: none !important; }
+
+    .title-settings-trigger {
+      width: auto;
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      line-height: inherit;
+      text-align: left;
+      box-shadow: none;
+    }
+
+    .title-settings-trigger:hover:not(:disabled) {
+      background: transparent;
+      color: var(--user-accent);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .title-settings-trigger:active:not(:disabled) { transform: none; }
 
     .status-line { gap: 10px; min-height: 28px; margin: 12px 0 0; }
     .status-line::before {
@@ -241,14 +259,14 @@
       justify-content: space-between;
       gap: 4px 16px;
       padding: 11px 13px;
-      border: 1px solid rgb(148 163 184 / 12%);
-      border-radius: 10px;
-      background: rgb(15 23 42 / 55%);
-      color: #e2e8f0;
+      border: 1px solid #d5dde2;
+      border-radius: 6px;
+      background: #f5f7f8;
+      color: #1d2933;
       font-size: 0.9rem;
     }
 
-    .history-details, #history-status { color: #94a3b8; }
+    .history-details, #history-status { color: #64748b; }
     #history-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
     .leaderboard-card .section-heading { margin-bottom: 12px; }
     .leaderboard-card .section-heading button,
@@ -265,10 +283,10 @@
       width: 100%;
       min-height: 44px;
       padding: 10px 12px;
-      border: 1px solid #3b4b62;
-      border-radius: 10px;
-      background: #111c30;
-      color: #f8fafc;
+      border: 1px solid #aebac2;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2933;
       font: inherit;
     }
 
@@ -284,16 +302,31 @@
       width: auto;
       min-height: 38px;
       padding: 7px 10px;
-      border: 1px solid #3b4b62;
-      border-radius: 10px;
-      background: #111c30;
-      color: #f8fafc;
+      border: 1px solid #aebac2;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2933;
       font: inherit;
     }
 
     .leaderboard-actions label { margin: 0; }
-    .developer-settings { margin: 16px 0; }
-    .developer-settings summary { cursor: pointer; font-weight: 750; }
+    .developer-settings {
+      box-sizing: border-box;
+      margin: auto;
+      width: min(520px, calc(100% - 40px));
+      max-height: min(84vh, 760px);
+      overflow: auto;
+      padding: 24px;
+      border: 1px solid #bac5cc;
+      border-radius: 8px;
+      background: #fff;
+      color: #1d2933;
+      box-shadow: 0 18px 60px rgb(15 23 42 / 25%);
+    }
+
+    .developer-settings::backdrop { background: rgb(15 23 42 / 55%); }
+    .developer-settings-heading { display: flex; justify-content: space-between; gap: 16px; }
+    .developer-settings-heading button { width: auto; min-height: 38px; padding: 8px 12px; }
     .developer-settings-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -306,16 +339,17 @@
       width: 100%;
       min-height: 44px;
       padding: 9px 12px;
-      border: 1px solid #3b4b62;
-      border-radius: 10px;
-      background: #111c30;
-      color: #f8fafc;
+      border: 1px solid #aebac2;
+      border-radius: 6px;
+      background: #fff;
+      color: #1d2933;
       font: inherit;
     }
 
     .developer-settings input[type="color"] { padding: 4px; }
     .developer-settings .full-width { grid-column: 1 / -1; }
     .developer-settings p { margin: 8px 0; font-size: 0.88rem; }
+    .developer-settings .settings-section-heading { grid-column: 1 / -1; margin: 8px 0 0; font-weight: 700; }
     #developer-settings-status { min-height: 1.5em; margin: 10px 0 0; }
 
     #leaderboard-status, #hardware-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
@@ -351,7 +385,7 @@
 
     @media (max-width: 520px) {
       body { padding: 24px 15px; }
-      .topline { margin-bottom: 38px; }
+      .topline { margin-bottom: 20px; }
       .card { padding: 19px; }
       .settings, .metrics { grid-template-columns: 1fr; }
       .metric:first-child { grid-column: auto; }
@@ -359,19 +393,18 @@
       .leaderboard-options { grid-template-columns: 1fr; }
       .leaderboard-item { grid-template-columns: 1fr 1fr; }
       .developer-settings-grid { grid-template-columns: 1fr; }
+      .developer-settings .settings-section-heading { grid-column: auto; }
       .developer-settings .full-width { grid-column: auto; }
     }
 
     :root[data-theme="light"] {
       color-scheme: light;
-      background: #f1f5f9;
-      color: #0f172a;
+      background: #e9edf0;
+      color: #1d2933;
     }
 
     :root[data-theme="light"] body {
-      background:
-        radial-gradient(ellipse at 12% 0%, rgb(34 197 94 / 8%), transparent 34rem),
-        radial-gradient(ellipse at 100% 35%, rgb(59 130 246 / 6%), transparent 32rem);
+      background: #e9edf0;
     }
 
     :root[data-theme="light"] .eyebrow,
@@ -379,21 +412,21 @@
     :root[data-theme="light"] label,
     :root[data-theme="light"] .metric-label { color: #475569; }
     :root[data-theme="light"] .local-pill {
-      border-color: #cbd5e1;
-      background: rgb(255 255 255 / 85%);
-      color: #334155;
+      border-color: #cbd4da;
+      background: #fff;
+      color: #475569;
     }
     :root[data-theme="light"] .unstable-notice {
-      border-color: #f59e0b;
-      background: #fef3c7;
-      color: #78350f;
+      border-color: #e1ca91;
+      background: #fff5dc;
+      color: #684500;
     }
-    :root[data-theme="light"] .unstable-notice p { color: #78350f; }
-    :root[data-theme="light"] p { color: #334155; }
+    :root[data-theme="light"] .unstable-notice p { color: #684500; }
+    :root[data-theme="light"] p { color: #475569; }
     :root[data-theme="light"] .card {
-      border-color: #cbd5e1;
-      background: linear-gradient(145deg, #fff, #f8fafc);
-      box-shadow: 0 18px 50px rgb(15 23 42 / 8%);
+      border-color: #cbd4da;
+      background: #fff;
+      box-shadow: none;
     }
     :root[data-theme="light"] select,
     :root[data-theme="light"] .leaderboard-options input,
@@ -401,13 +434,13 @@
     :root[data-theme="light"] .leaderboard-actions select,
     :root[data-theme="light"] .developer-settings input,
     :root[data-theme="light"] .developer-settings select {
-      border-color: #cbd5e1;
+      border-color: #aebac2;
       background: #fff;
-      color: #0f172a;
+      color: #1d2933;
     }
     :root[data-theme="light"] .metric {
-      border-color: #cbd5e1;
-      background: #f8fafc;
+      border-color: #d5dde2;
+      background: #f5f7f8;
     }
     :root[data-theme="light"] .metric:first-child {
       border-color: rgb(22 163 74 / 28%);
@@ -416,13 +449,15 @@
     :root[data-theme="light"] .metric:first-child .metric-value { color: #166534; }
     :root[data-theme="light"] progress { background: #cbd5e1; }
     :root[data-theme="light"] progress::-webkit-progress-bar { background: #cbd5e1; }
-    :root[data-theme="light"] button { color: #052e16; }
-    :root[data-theme="light"] button.is-running { color: #fff7ed; }
+    :root[data-theme="light"] button { color: #fff; }
+    :root[data-theme="light"] .title-settings-trigger { color: inherit; }
+    :root[data-theme="light"] .title-settings-trigger:hover:not(:disabled) { color: var(--user-accent); }
+    :root[data-theme="light"] button.is-running { color: #fff; }
     :root[data-theme="light"] .history-item,
     :root[data-theme="light"] .leaderboard-item {
-      border-color: #cbd5e1;
-      background: #f8fafc;
-      color: #0f172a;
+      border-color: #d5dde2;
+      background: #f5f7f8;
+      color: #1d2933;
     }
     :root[data-theme="light"] .history-details,
     :root[data-theme="light"] #history-status,
@@ -431,9 +466,60 @@
     :root[data-theme="light"] .leaderboard-detail,
     :root[data-theme="light"] .note { color: #475569; }
     :root[data-theme="light"] #status { color: #334155; }
-    :root[data-theme="light"] .developer-settings { color: #0f172a; }
-    :root[data-theme="light"] .developer-settings summary { color: #0f172a; }
-    :root[data-theme="light"] .developer-settings p { color: #334155; }
+    :root[data-theme="light"] .developer-settings { color: #1d2933; }
+    :root[data-theme="light"] .developer-settings p { color: #475569; }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      background: #111820;
+      color: #edf2f5;
+    }
+
+    :root[data-theme="dark"] body { background: #111820; }
+    :root[data-theme="dark"] .local-pill,
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] .leaderboard-options input,
+    :root[data-theme="dark"] .leaderboard-options select,
+    :root[data-theme="dark"] .leaderboard-actions select,
+    :root[data-theme="dark"] .developer-settings input,
+    :root[data-theme="dark"] .developer-settings select {
+      border-color: #47545e;
+      background: #202b34;
+      color: #edf2f5;
+    }
+
+    :root[data-theme="dark"] .card,
+    :root[data-theme="dark"] .developer-settings {
+      border-color: #35434d;
+      background: #1a252e;
+      color: #edf2f5;
+    }
+
+    :root[data-theme="dark"] p,
+    :root[data-theme="dark"] .note,
+    :root[data-theme="dark"] .developer-settings p { color: #c0cbd2; }
+
+    :root[data-theme="dark"] .metric,
+    :root[data-theme="dark"] .history-item,
+    :root[data-theme="dark"] .leaderboard-item {
+      border-color: #35434d;
+      background: #202b34;
+      color: #edf2f5;
+    }
+
+    :root[data-theme="dark"] .metric:first-child { border-color: #3a604a; background: #1e3026; }
+    :root[data-theme="dark"] .metric:first-child .metric-value { color: #9ac7aa; }
+    :root[data-theme="dark"] .eyebrow,
+    :root[data-theme="dark"] .section-index,
+    :root[data-theme="dark"] label,
+    :root[data-theme="dark"] .metric-label,
+    :root[data-theme="dark"] .history-details,
+    :root[data-theme="dark"] #history-status,
+    :root[data-theme="dark"] #leaderboard-status,
+    :root[data-theme="dark"] #hardware-status,
+    :root[data-theme="dark"] .leaderboard-detail { color: #aebbc4; }
+
+    :root[data-theme="dark"] .developer-settings button:not(.title-settings-trigger) { color: #fff; }
   </style>
 </head>
 <body>
@@ -447,18 +533,25 @@
     </header>
 
     <aside class="unstable-notice" role="note" aria-label="Unstable beta warning">
-      <strong>UNSTABLE BETA · v1.0.8</strong>
+      <strong>UNSTABLE BETA · v1.0.9</strong>
       <p>
-        This browser version benchmarks the CPU only. Long runs can create sustained
-        load and heat; stop if the device gets hot or sluggish. Results are unverified.
+        Runs stay on this device. Optional browser memory tests require developer access;
+        stop any test if your device gets hot or sluggish.
       </p>
     </aside>
 
     <section class="hero">
-      <h1>Bitcoin Hashrate<br><span>Benchmark</span></h1>
+      <h1>
+        <button id="title-settings-trigger" class="title-settings-trigger" type="button"
+          aria-haspopup="dialog" aria-controls="developer-settings-dialog"
+          aria-label="Bitcoin Hashrate Benchmark. Open developer settings"
+          title="Open developer settings">
+          Bitcoin Hashrate<br><span>Benchmark</span>
+        </button>
+      </h1>
       <p>
-        See how your device handles SHA-256 double hashing. Benchmarking runs
-        locally — no mining, pool, or wallet. Sharing results is optional.
+        Measure CPU SHA-256 performance, or unlock experimental browser memory tests.
+        Tests run locally — no mining, pool, or wallet. Sharing CPU results is optional.
       </p>
     </section>
 
@@ -469,11 +562,17 @@
       </div>
       <div class="settings">
         <div>
+          <label for="benchmark-type">BENCHMARK</label>
+          <select id="benchmark-type">
+            <option value="cpu">CPU hashrate</option>
+          </select>
+        </div>
+        <div>
           <label for="duration">TEST DURATION</label>
           <select id="duration">
-            <option value="10">10 seconds</option>
+            <option value="5">5 seconds</option>
+            <option value="10" selected>10 seconds</option>
             <option value="30">30 seconds</option>
-            <option value="60">60 seconds</option>
             <option value="infinite">Infinite (stop manually)</option>
           </select>
         </div>
@@ -481,30 +580,35 @@
           <label for="threads">LOGICAL CPU WORKERS</label>
           <select id="threads"></select>
         </div>
-        <div>
-          <label for="theme">APPEARANCE</label>
-          <select id="theme">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </div>
       </div>
     </section>
 
-    <details class="card developer-settings">
-      <summary>Developer settings</summary>
-      <p>To get the code, pay the developer or ask nicely for a secret code.</p>
-      <div class="developer-settings-grid">
+    <dialog id="developer-settings-dialog" class="developer-settings" aria-labelledby="developer-settings-heading">
+      <div class="developer-settings-heading">
+        <div>
+          <h2 id="developer-settings-heading">Developer settings</h2>
+          <p>Additional appearance and test options require a developer code.</p>
+        </div>
+        <button id="close-developer-settings" type="button" aria-label="Close developer settings">Close</button>
+      </div>
+      <p>Pay the developer or ask nicely for access. This app does not process payments.</p>
+      <div class="developer-settings-grid" id="unlock-controls">
         <div>
           <label for="developer-code">DEVELOPER CODE</label>
           <input id="developer-code" type="password" autocomplete="off">
         </div>
         <div>
-          <label>&nbsp;</label>
           <button id="unlock-developer-settings" type="button">Unlock settings</button>
         </div>
       </div>
       <div class="developer-settings-grid" id="customization-controls" hidden>
+        <div>
+          <label for="theme">APPEARANCE</label>
+          <select id="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
         <div>
           <label for="accent-color">ACCENT COLOR</label>
           <input id="accent-color" type="color" value="#4ade80">
@@ -526,9 +630,17 @@
           <label for="custom-workers">CUSTOM CPU WORKERS</label>
           <input id="custom-workers" type="number" min="1" max="64" value="4">
         </div>
+        <div>
+          <label for="memory-bandwidth-working-set">BANDWIDTH WORKING SET (MiB)</label>
+          <input id="memory-bandwidth-working-set" type="number" min="8" max="256" step="8" value="64">
+        </div>
+        <div>
+          <label for="memory-latency-working-set">LATENCY WORKING SET (MiB)</label>
+          <input id="memory-latency-working-set" type="number" min="8" max="256" step="8" value="64">
+        </div>
       </div>
-      <p id="developer-settings-status" class="full-width" role="status" aria-live="polite"></p>
-    </details>
+      <p id="developer-settings-status" role="status" aria-live="polite"></p>
+    </dialog>
 
     <section class="card" aria-labelledby="results-heading">
       <div class="section-heading">
@@ -537,18 +649,18 @@
       </div>
       <div class="metrics">
         <div class="metric">
-          <span class="metric-label">HASH RATE</span>
+          <span class="metric-label" id="rate-label">HASH RATE</span>
           <div class="metric-value" id="rate">—</div>
         </div>
         <div class="metric">
-          <span class="metric-label">TOTAL HASHES</span>
+          <span class="metric-label" id="work-label">TOTAL HASHES</span>
           <div class="metric-value" id="hashes">—</div>
         </div>
         <div class="metric">
           <span class="metric-label">ELAPSED</span>
           <div class="metric-value" id="elapsed">0.0 s</div>
         </div>
-        <div class="metric">
+        <div class="metric" id="per-thread-metric">
           <span class="metric-label">HASHES / THREAD / SECOND</span>
           <div class="metric-value" id="per-thread-rate">—</div>
         </div>
@@ -621,10 +733,10 @@
 
     <p class="note">
       Results vary with browser, power mode, temperature, and other running tabs.
-      Browser and Windows app results are not directly comparable. Use only on a
+      Browser and Windows test backends differ, so their results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
-    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.8.</p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.9.</p>
   </main>
 
   <script>
@@ -632,6 +744,7 @@
 
     const workerSource = `
       let stopped = false;
+      const yieldToMessages = () => new Promise((resolve) => setTimeout(resolve, 0));
 
       self.onmessage = async ({ data }) => {
         if (data.type === "stop") {
@@ -642,40 +755,122 @@
         if (data.type !== "start") return;
 
         try {
-          if (!self.crypto || !self.crypto.subtle) {
-            throw new Error("Web Crypto is unavailable. Use a recent browser over HTTPS or localhost.");
-          }
+          let work = 0;
+          let startedAt;
+          let lastReport = 0;
+          let sink = 0;
 
-          const header = new Uint8Array(80);
-          const nonce = new DataView(header.buffer);
-          nonce.setUint32(0, data.id, true);
-          let hashes = 0;
-          const startedAt = performance.now();
-          let lastReport = startedAt;
-
-          while (!stopped && performance.now() - startedAt < data.durationMs) {
-            nonce.setUint32(76, hashes, true);
-            const firstHash = await self.crypto.subtle.digest("SHA-256", header);
-            await self.crypto.subtle.digest("SHA-256", firstHash);
-            hashes++;
-
-            const now = performance.now();
-            if (now - lastReport >= 500) {
-              self.postMessage({
-                type: "progress",
-                id: data.id,
-                hashes,
-                elapsedMs: now - startedAt
-              });
-              lastReport = now;
+          if (data.kind === "cpu") {
+            if (!self.crypto?.subtle) {
+              throw new Error("Web Crypto is unavailable. Use a recent browser over HTTPS or localhost.");
             }
+
+            const header = new Uint8Array(80);
+            const nonce = new DataView(header.buffer);
+            nonce.setUint32(0, data.id, true);
+            startedAt = performance.now();
+            lastReport = startedAt;
+
+            while (!stopped && performance.now() - startedAt < data.durationMs) {
+              nonce.setUint32(76, work, true);
+              const firstHash = await self.crypto.subtle.digest("SHA-256", header);
+              await self.crypto.subtle.digest("SHA-256", firstHash);
+              work++;
+
+              const now = performance.now();
+              if (now - lastReport >= 500) {
+                self.postMessage({ type: "progress", id: data.id, work, elapsedMs: now - startedAt });
+                lastReport = now;
+              }
+            }
+          } else if (data.kind === "memory-bandwidth") {
+            const byteLength = data.workingSetMiB * 1024 * 1024;
+            const source = new Uint8Array(byteLength);
+            const destination = new Uint8Array(byteLength);
+            source.fill(0x5a);
+            destination.fill(0xa5);
+            self.postMessage({ type: "ready", id: data.id });
+            await yieldToMessages();
+            startedAt = performance.now();
+            lastReport = startedAt;
+            let lastYield = startedAt;
+
+            while (!stopped && performance.now() - startedAt < data.durationMs) {
+              destination.set(source);
+              source.set(destination);
+              work += byteLength * 4;
+
+              const now = performance.now();
+              if (now - lastReport >= 500) {
+                self.postMessage({ type: "progress", id: data.id, work, elapsedMs: now - startedAt });
+                lastReport = now;
+              }
+              if (now - lastYield >= 100) {
+                await yieldToMessages();
+                lastYield = performance.now();
+              }
+            }
+          } else if (data.kind === "memory-latency") {
+            const elementCount = data.workingSetMiB * 1024 * 1024 / Uint32Array.BYTES_PER_ELEMENT;
+            const links = new Uint32Array(elementCount);
+            const order = new Uint32Array(elementCount);
+            for (let index = 0; index < elementCount; index++) {
+              if (stopped) {
+                self.postMessage({ type: "done", id: data.id, work: 0, elapsedMs: 0 });
+                return;
+              }
+              order[index] = index;
+              if ((index & 0x3ffff) === 0) await yieldToMessages();
+            }
+
+            for (let index = elementCount - 1; index > 0; index--) {
+              if (stopped) {
+                self.postMessage({ type: "done", id: data.id, work: 0, elapsedMs: 0 });
+                return;
+              }
+              const other = Math.floor(Math.random() * (index + 1));
+              [order[index], order[other]] = [order[other], order[index]];
+              if ((index & 0x3ffff) === 0) await yieldToMessages();
+            }
+
+            for (let index = 0; index < elementCount; index++) {
+              if (stopped) {
+                self.postMessage({ type: "done", id: data.id, work: 0, elapsedMs: 0 });
+                return;
+              }
+              links[order[index]] = order[(index + 1) % elementCount];
+              if ((index & 0x3ffff) === 0) await yieldToMessages();
+            }
+
+            self.postMessage({ type: "ready", id: data.id });
+            const firstIndex = order[0];
+            let current = firstIndex;
+            startedAt = performance.now();
+            lastReport = startedAt;
+            while (!stopped && performance.now() - startedAt < data.durationMs) {
+              const batchEnd = work + 65_536;
+              while (work < batchEnd && !stopped) {
+                current = links[current];
+                work++;
+              }
+
+              const now = performance.now();
+              if (now - lastReport >= 500) {
+                self.postMessage({ type: "progress", id: data.id, work, elapsedMs: now - startedAt });
+                lastReport = now;
+              }
+            }
+            sink = current;
+          } else {
+            throw new Error("Unsupported browser benchmark mode.");
           }
 
           self.postMessage({
             type: "done",
             id: data.id,
-            hashes,
-            elapsedMs: performance.now() - startedAt
+            work,
+            elapsedMs: startedAt ? performance.now() - startedAt : 0,
+            sink
           });
         } catch (error) {
           self.postMessage({
@@ -686,14 +881,18 @@
       };
     `;
 
+    const benchmarkSelect = document.querySelector("#benchmark-type");
     const durationSelect = document.querySelector("#duration");
     const threadSelect = document.querySelector("#threads");
     const themeSelect = document.querySelector("#theme");
     const startButton = document.querySelector("#start");
     const status = document.querySelector("#status");
     const rate = document.querySelector("#rate");
+    const rateLabel = document.querySelector("#rate-label");
+    const workLabel = document.querySelector("#work-label");
+    const perThreadMetric = document.querySelector("#per-thread-metric");
     const perThreadRate = document.querySelector("#per-thread-rate");
-    const hashes = document.querySelector("#hashes");
+    const workValue = document.querySelector("#hashes");
     const elapsed = document.querySelector("#elapsed");
     const progress = document.querySelector("#progress");
     const historyList = document.querySelector("#history-list");
@@ -710,14 +909,20 @@
     const hardwareStatus = document.querySelector("#hardware-status");
     const refreshLeaderboardButton = document.querySelector("#refresh-leaderboard");
     const submitResultButton = document.querySelector("#submit-result");
+    const titleSettingsTrigger = document.querySelector("#title-settings-trigger");
+    const developerSettingsDialog = document.querySelector("#developer-settings-dialog");
+    const closeDeveloperSettingsButton = document.querySelector("#close-developer-settings");
     const developerCodeInput = document.querySelector("#developer-code");
     const unlockDeveloperSettingsButton = document.querySelector("#unlock-developer-settings");
+    const unlockControls = document.querySelector("#unlock-controls");
     const customizationControls = document.querySelector("#customization-controls");
     const developerSettingsStatus = document.querySelector("#developer-settings-status");
     const accentColorInput = document.querySelector("#accent-color");
     const fontScaleSelect = document.querySelector("#font-scale");
     const customDurationInput = document.querySelector("#custom-duration");
     const customWorkersInput = document.querySelector("#custom-workers");
+    const memoryBandwidthWorkingSetInput = document.querySelector("#memory-bandwidth-working-set");
+    const memoryLatencyWorkingSetInput = document.querySelector("#memory-latency-working-set");
     const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 64));
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
     const settingsKey = "bitcoin-hashrate-benchmark.settings.v1";
@@ -726,12 +931,15 @@
       ? "https://bitcoin-hashrate-benchmark.azgasgiant220.workers.dev"
       : location.origin;
     let latestRun = null;
+    let savedCustomization = null;
     let appSettings = {
-      theme: "dark",
-      accentColor: "#4ade80",
+      theme: "light",
+      accentColor: "#287a50",
       fontScale: 100,
       customDurationSeconds: 60,
       customWorkerCount: Math.min(workerCount, 4),
+      memoryBandwidthWorkingSetMiB: 64,
+      memoryLatencyWorkingSetMiB: 64,
       customizationUnlocked: false
     };
 
@@ -740,6 +948,12 @@
         const saved = globalThis.localStorage.getItem(settingsKey);
         if (saved === null) return;
         const parsed = JSON.parse(saved);
+        const memoryBandwidthWorkingSetMiB = parsed?.memoryBandwidthWorkingSetMiB
+          ?? parsed?.memoryWorkingSetMiB
+          ?? 64;
+        const memoryLatencyWorkingSetMiB = parsed?.memoryLatencyWorkingSetMiB
+          ?? parsed?.memoryWorkingSetMiB
+          ?? 64;
         if (!parsed || typeof parsed !== "object"
           || !["dark", "light"].includes(parsed.theme)
           || !/^#[0-9a-f]{6}$/i.test(parsed.accentColor)
@@ -750,10 +964,23 @@
           || !Number.isInteger(parsed.customWorkerCount)
           || parsed.customWorkerCount < 1
           || parsed.customWorkerCount > 64
+          || !Number.isInteger(memoryBandwidthWorkingSetMiB)
+          || memoryBandwidthWorkingSetMiB < 8
+          || memoryBandwidthWorkingSetMiB > 256
+          || memoryBandwidthWorkingSetMiB % 8 !== 0
+          || !Number.isInteger(memoryLatencyWorkingSetMiB)
+          || memoryLatencyWorkingSetMiB < 8
+          || memoryLatencyWorkingSetMiB > 256
+          || memoryLatencyWorkingSetMiB % 8 !== 0
           || typeof parsed.customizationUnlocked !== "boolean") {
           throw new Error("Saved settings contain invalid values.");
         }
-        appSettings = { ...parsed, customizationUnlocked: false };
+        savedCustomization = {
+          ...parsed,
+          memoryBandwidthWorkingSetMiB,
+          memoryLatencyWorkingSetMiB
+        };
+        delete savedCustomization.memoryWorkingSetMiB;
       } catch (error) {
         developerSettingsStatus.textContent = `Could not load preferences: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -783,13 +1010,24 @@
       fontScaleSelect.value = String(appSettings.fontScale);
       customDurationInput.value = String(appSettings.customDurationSeconds);
       customWorkersInput.value = String(appSettings.customWorkerCount);
+      memoryBandwidthWorkingSetInput.value = String(appSettings.memoryBandwidthWorkingSetMiB);
+      memoryLatencyWorkingSetInput.value = String(appSettings.memoryLatencyWorkingSetMiB);
+      unlockControls.hidden = appSettings.customizationUnlocked;
       customizationControls.hidden = !appSettings.customizationUnlocked;
       if (appSettings.customizationUnlocked) {
+        addOptionIfMissing(benchmarkSelect, "Browser memory bandwidth", "memory-bandwidth");
+        addOptionIfMissing(benchmarkSelect, "Browser memory latency", "memory-latency");
         if (!Array.from(durationSelect.options).some((option) => option.value === "custom")) {
           durationSelect.add(new Option("Custom duration", "custom"));
         }
         if (!Array.from(threadSelect.options).some((option) => option.value === "custom")) {
           threadSelect.add(new Option("Custom worker count", "custom"));
+        }
+      }
+
+      function addOptionIfMissing(select, label, value) {
+        if (!Array.from(select.options).some((option) => option.value === value)) {
+          select.add(new Option(label, value));
         }
       }
     }
@@ -798,6 +1036,10 @@
       return threadSelect.value === "custom"
         ? Number(customWorkersInput.value)
         : Number(threadSelect.value);
+    }
+
+    function selectedBenchmarkKind() {
+      return benchmarkSelect.value;
     }
 
     function activeDurationSeconds() {
@@ -817,10 +1059,21 @@
     let running = false;
     let stoppedByUser = false;
     let startedAt = 0;
-    let totalHashes = 0;
+    let totalWork = 0;
     let doneWorkers = 0;
-    let workerHashes = [];
+    let workerWork = [];
+    let workerElapsedMs = [];
     let displayTimer;
+
+    function updateBenchmarkControls() {
+      const memoryMode = selectedBenchmarkKind().startsWith("memory-");
+      threadSelect.disabled = memoryMode || running;
+      if (!running) {
+        memoryBandwidthWorkingSetInput.disabled = !appSettings.customizationUnlocked;
+        memoryLatencyWorkingSetInput.disabled = !appSettings.customizationUnlocked;
+      }
+      updateDisplay(0);
+    }
 
     function formatRate(value) {
       if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} MH/s`;
@@ -851,10 +1104,15 @@
         if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
         if (result.unlocked !== true) throw new Error("The verification response was invalid.");
 
-        appSettings.customizationUnlocked = true;
+        appSettings = {
+          ...appSettings,
+          ...savedCustomization,
+          customizationUnlocked: true
+        };
         applySettings();
+        updateBenchmarkControls();
         if (saveSettings()) {
-          developerSettingsStatus.textContent = "Developer customization settings unlocked for this session.";
+          developerSettingsStatus.textContent = "Advanced settings unlocked for this visit.";
         }
       } catch (error) {
         developerSettingsStatus.textContent = `Could not verify developer code: ${error instanceof Error ? error.message : String(error)}`;
@@ -867,18 +1125,27 @@
     function saveCustomization() {
       const duration = Number(customDurationInput.value);
       const customWorkers = Number(customWorkersInput.value);
+      const bandwidthWorkingSetMiB = Number(memoryBandwidthWorkingSetInput.value);
+      const latencyWorkingSetMiB = Number(memoryLatencyWorkingSetInput.value);
       if (!Number.isInteger(duration) || duration < 1 || duration > 86400
-        || !Number.isInteger(customWorkers) || customWorkers < 1 || customWorkers > 64) {
-        developerSettingsStatus.textContent = "Duration must be 1–86,400 seconds and workers must be 1–64.";
+        || !Number.isInteger(customWorkers) || customWorkers < 1 || customWorkers > 64
+        || !Number.isInteger(bandwidthWorkingSetMiB) || bandwidthWorkingSetMiB < 8
+        || bandwidthWorkingSetMiB > 256 || bandwidthWorkingSetMiB % 8 !== 0
+        || !Number.isInteger(latencyWorkingSetMiB) || latencyWorkingSetMiB < 8
+        || latencyWorkingSetMiB > 256 || latencyWorkingSetMiB % 8 !== 0) {
+        developerSettingsStatus.textContent = "Choose a valid duration, worker count, and 8–256 MiB working set in 8 MiB steps.";
         return;
       }
 
       appSettings = {
         ...appSettings,
+        theme: themeSelect.value,
         accentColor: accentColorInput.value,
         fontScale: Number(fontScaleSelect.value),
         customDurationSeconds: duration,
-        customWorkerCount: customWorkers
+        customWorkerCount: customWorkers,
+        memoryBandwidthWorkingSetMiB: bandwidthWorkingSetMiB,
+        memoryLatencyWorkingSetMiB: latencyWorkingSetMiB
       };
       applySettings();
       if (saveSettings()) developerSettingsStatus.textContent = "Customization saved.";
@@ -1024,8 +1291,13 @@
           || entry.threadCount < 1
           || !Number.isSafeInteger(entry.hashes)
           || entry.hashes < 0
-          || (entry.benchmarkType !== undefined && !["cpu", "gpu"].includes(entry.benchmarkType))
+          || (entry.benchmarkType !== undefined && !["cpu", "gpu", "memory"].includes(entry.benchmarkType))
           || (entry.backend !== undefined && typeof entry.backend !== "string")
+          || (entry.workingSetMiB !== undefined
+            && (!Number.isInteger(entry.workingSetMiB)
+              || entry.workingSetMiB < 8
+              || entry.workingSetMiB > 256
+              || entry.workingSetMiB % 8 !== 0))
           || !Number.isFinite(entry.elapsedSeconds)
           || entry.elapsedSeconds <= 0) {
           throw new Error("Saved run history contains an invalid entry.");
@@ -1047,9 +1319,12 @@
         details.className = "history-details";
         const benchmarkType = entry.benchmarkType ?? "cpu";
         const backend = entry.backend ?? "browser-webcrypto";
-        details.textContent = `${benchmarkType.toUpperCase()} · ${backend} · ${entry.elapsedSeconds.toFixed(1)} s · `
-          + `${benchmarkType === "cpu" ? `${entry.threadCount} thread(s) · ` : ""}`
-          + `${entry.hashes.toLocaleString()} hashes · ${formatRate(entry.hashes / entry.elapsedSeconds)}`;
+        const metric = getHistoryMetric(entry);
+        const workingSet = entry.workingSetMiB ? ` · ${entry.workingSetMiB} MiB working set` : "";
+        const threadCount = benchmarkType === "cpu" ? ` · ${entry.threadCount} worker(s)` : "";
+        details.textContent = `${benchmarkType.toUpperCase()} · ${backend}${workingSet} · `
+          + `${entry.elapsedSeconds.toFixed(1)} s${threadCount} · `
+          + `${entry.hashes.toLocaleString()} ${metric.workUnit} · ${formatMetric(metric.score, metric.scoreUnit)}`;
 
         item.append(completedAt, details);
         historyList.append(item);
@@ -1064,17 +1339,46 @@
       const previous = entries.slice(1).find((entry) =>
         (entry.benchmarkType ?? "cpu") === (latest.benchmarkType ?? "cpu")
         && (entry.backend ?? "browser-webcrypto") === (latest.backend ?? "browser-webcrypto")
-        && entry.threadCount === latest.threadCount);
+        && (latest.benchmarkType !== "cpu" || entry.threadCount === latest.threadCount)
+        && (latest.benchmarkType !== "memory" || entry.workingSetMiB === latest.workingSetMiB));
       if (!previous) return "Comparison: no recent run with a matching benchmark configuration.";
 
-      const latestRate = latest.hashes / latest.elapsedSeconds;
-      const previousRate = previous.hashes / previous.elapsedSeconds;
-      const change = previousRate > 0 ? (latestRate / previousRate - 1) * 100 : 0;
-      const result = previousRate > 0
+      const latestMetric = getHistoryMetric(latest);
+      const previousMetric = getHistoryMetric(previous);
+      const change = previousMetric.score > 0
+        ? (latestMetric.score / previousMetric.score - 1) * (latestMetric.higherIsBetter ? 100 : -100)
+        : 0;
+      const result = previousMetric.score > 0
         ? `${change >= 0 ? "+" : ""}${change.toFixed(1)}% ${change >= 0 ? "faster" : "slower"}`
         : "previous score unavailable";
-      return `Latest compatible run: ${formatRate(latestRate)} vs ${formatRate(previousRate)} (${result}; `
+      return `Latest compatible run: ${formatMetric(latestMetric.score, latestMetric.scoreUnit)} vs `
+        + `${formatMetric(previousMetric.score, previousMetric.scoreUnit)} (${result}; `
         + `${new Date(previous.completedAt).toLocaleString()}).`;
+    }
+
+    function getHistoryMetric(entry) {
+      const rate = entry.hashes / entry.elapsedSeconds;
+      if (entry.backend === "browser-memory-bandwidth") {
+        return {
+          score: rate / 1_048_576,
+          scoreUnit: "MiB/s",
+          workUnit: "bytes moved",
+          higherIsBetter: true
+        };
+      }
+      if (entry.backend === "browser-memory-latency") {
+        return {
+          score: rate > 0 ? 1_000_000_000 / rate : 0,
+          scoreUnit: "ns/access",
+          workUnit: "accesses",
+          higherIsBetter: false
+        };
+      }
+      return { score: rate, scoreUnit: "H/s", workUnit: "hashes", higherIsBetter: true };
+    }
+
+    function formatMetric(value, unit) {
+      return unit === "H/s" ? formatRate(value) : `${value.toFixed(2)} ${unit}`;
     }
 
     function csvCell(value) {
@@ -1091,18 +1395,22 @@
           return;
         }
         const rows = [
-          ["completedAt", "benchmarkType", "backend", "threads", "work", "workUnit", "elapsedSeconds", "score", "scoreUnit"],
-          ...entries.map((entry) => [
-            entry.completedAt,
-            entry.benchmarkType ?? "cpu",
-            entry.backend ?? "browser-webcrypto",
-            entry.threadCount,
-            entry.hashes,
-            "hashes",
-            entry.elapsedSeconds,
-            (entry.hashes / entry.elapsedSeconds).toFixed(3),
-            "hashes/second"
-          ])
+          ["completedAt", "benchmarkType", "backend", "threads", "workingSetMiB", "work", "workUnit", "elapsedSeconds", "score", "scoreUnit"],
+          ...entries.map((entry) => {
+            const metric = getHistoryMetric(entry);
+            return [
+              entry.completedAt,
+              entry.benchmarkType ?? "cpu",
+              entry.backend ?? "browser-webcrypto",
+              entry.threadCount,
+              entry.workingSetMiB ?? "",
+              entry.hashes,
+              metric.workUnit,
+              entry.elapsedSeconds,
+              metric.score.toFixed(3),
+              metric.scoreUnit
+            ];
+          })
         ];
         const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
         const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -1150,16 +1458,30 @@
     }
 
     function updateDisplay(elapsedMs) {
-      totalHashes = workerHashes.reduce((sum, count) => sum + count, 0);
+      totalWork = workerWork.reduce((sum, count) => sum + count, 0);
       const seconds = elapsedMs / 1000;
-      const activeThreads = activeWorkerCount();
-      const hashesPerThreadPerSecond = seconds > 0
-        ? totalHashes / seconds / activeThreads
+      const kind = selectedBenchmarkKind();
+      const memoryMode = kind.startsWith("memory-");
+      const perThreadRateValue = seconds > 0 && !memoryMode
+        ? totalWork / seconds / activeWorkerCount()
         : 0;
-      hashes.textContent = totalHashes.toLocaleString();
+      const workPerSecond = seconds > 0 ? totalWork / seconds : 0;
+
+      rateLabel.textContent = kind === "memory-bandwidth"
+        ? "MEMORY BANDWIDTH"
+        : kind === "memory-latency" ? "MEMORY LATENCY" : "HASH RATE";
+      workLabel.textContent = kind === "memory-bandwidth"
+        ? "BYTES READ + WRITTEN"
+        : kind === "memory-latency" ? "MEMORY ACCESSES" : "TOTAL HASHES";
+      perThreadMetric.hidden = memoryMode;
+      workValue.textContent = totalWork.toLocaleString();
       elapsed.textContent = `${seconds.toFixed(1)} s`;
-      rate.textContent = formatRate(seconds > 0 ? totalHashes / seconds : 0);
-      perThreadRate.textContent = formatPerThreadRate(hashesPerThreadPerSecond);
+      rate.textContent = kind === "memory-bandwidth"
+        ? `${(workPerSecond / 1_048_576).toFixed(2)} MiB/s`
+        : kind === "memory-latency"
+          ? `${(workPerSecond > 0 ? 1_000_000_000 / workPerSecond : 0).toFixed(2)} ns/access`
+          : formatRate(workPerSecond);
+      perThreadRate.textContent = formatPerThreadRate(perThreadRateValue);
       if (durationSelect.value === "infinite") {
         progress.removeAttribute("value");
       } else {
@@ -1187,16 +1509,29 @@
         return;
       }
 
+      const kind = selectedBenchmarkKind();
+      const memoryMode = kind.startsWith("memory-");
       const infiniteRun = durationSelect.value === "infinite";
-      const count = activeWorkerCount();
+      const count = memoryMode ? 1 : activeWorkerCount();
       const durationSeconds = activeDurationSeconds();
-      if (!globalThis.crypto?.subtle || typeof Worker === "undefined") {
-        status.textContent = "This browser does not support the required Web Crypto or Worker APIs.";
+      const workingSetMiB = Number(kind === "memory-latency"
+        ? memoryLatencyWorkingSetInput.value
+        : memoryBandwidthWorkingSetInput.value);
+      if (memoryMode && !appSettings.customizationUnlocked) {
+        status.textContent = "Unlock developer settings to use browser memory tests.";
         return;
       }
-      if (!Number.isInteger(count) || count < 1 || count > 64
+      if ((kind === "cpu" && !globalThis.crypto?.subtle) || typeof Worker === "undefined") {
+        status.textContent = kind === "cpu"
+          ? "This browser does not support the required Web Crypto or Worker APIs."
+          : "This browser does not support Web Workers.";
+        return;
+      }
+      if ((!memoryMode && (!Number.isInteger(count) || count < 1 || count > 64))
+        || (memoryMode && (!Number.isInteger(workingSetMiB) || workingSetMiB < 8
+          || workingSetMiB > 256 || workingSetMiB % 8 !== 0))
         || (!infiniteRun && (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > 86400))) {
-        status.textContent = "Choose a valid worker count and test duration.";
+        status.textContent = "Choose a valid test duration, worker count, and memory working set.";
         return;
       }
 
@@ -1205,12 +1540,16 @@
       latestRun = null;
       submitResultButton.disabled = true;
       doneWorkers = 0;
-      totalHashes = 0;
-      workerHashes = [];
-      rate.textContent = "0 H/s";
+      totalWork = 0;
+      workerWork = [];
+      workerElapsedMs = [];
+      rate.textContent = kind === "memory-bandwidth"
+        ? "0 MiB/s"
+        : kind === "memory-latency" ? "— ns/access" : "0 H/s";
       perThreadRate.textContent = "0 H/s/thread";
-      hashes.textContent = "0";
+      workValue.textContent = "0";
       elapsed.textContent = "0.0 s";
+      updateDisplay(0);
       if (infiniteRun) {
         progress.removeAttribute("value");
       } else {
@@ -1220,14 +1559,27 @@
       startButton.classList.add("is-running");
       durationSelect.disabled = true;
       threadSelect.disabled = true;
+      benchmarkSelect.disabled = true;
       customWorkersInput.disabled = true;
-      status.textContent = infiniteRun
-        ? `Running with ${count} logical CPU worker(s); stop when ready.`
-        : `Running with ${count} logical CPU worker(s)...`;
+      memoryBandwidthWorkingSetInput.disabled = true;
+      memoryLatencyWorkingSetInput.disabled = true;
+      const benchmarkName = kind === "memory-bandwidth"
+        ? `browser memory bandwidth using two ${workingSetMiB} MiB buffers`
+        : kind === "memory-latency"
+          ? `browser memory latency using a ${workingSetMiB} MiB chain and setup array`
+          : `CPU benchmark with ${count} logical worker(s)`;
+      status.textContent = memoryMode
+        ? `Preparing ${benchmarkName}...`
+        : infiniteRun
+          ? `Running ${benchmarkName}; stop when ready.`
+          : `Running ${benchmarkName}...`;
       const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
       const durationMs = infiniteRun ? Number.POSITIVE_INFINITY : durationSeconds * 1000;
       startedAt = performance.now();
-      displayTimer = setInterval(() => updateDisplay(performance.now() - startedAt), 250);
+      let memoryReady = false;
+      displayTimer = setInterval(() => {
+        if (!memoryMode || memoryReady) updateDisplay(performance.now() - startedAt);
+      }, 250);
       let completedElapsedMs = 0;
       let completedSuccessfully = false;
 
@@ -1243,8 +1595,19 @@
                   return;
                 }
 
-                workerHashes[data.id] = data.hashes;
-                updateDisplay(performance.now() - startedAt);
+                if (data.type === "ready") {
+                  memoryReady = true;
+                  startedAt = performance.now();
+                  status.textContent = infiniteRun
+                    ? `Running ${benchmarkName}; stop when ready.`
+                    : `Running ${benchmarkName}...`;
+                  updateDisplay(0);
+                  return;
+                }
+
+                workerWork[data.id] = data.work;
+                workerElapsedMs[data.id] = data.elapsedMs;
+                updateDisplay(memoryMode ? data.elapsedMs : performance.now() - startedAt);
 
                 if (data.type === "done" && ++doneWorkers === count) resolve();
               };
@@ -1257,26 +1620,40 @@
           }
 
           for (let id = 0; id < workers.length; id++) {
-            workers[id].postMessage({ type: "start", id, durationMs });
+            workers[id].postMessage({ type: "start", id, durationMs, kind, workingSetMiB });
           }
         });
-        completedElapsedMs = performance.now() - startedAt;
+        completedElapsedMs = memoryMode ? workerElapsedMs[0] : performance.now() - startedAt;
         updateDisplay(completedElapsedMs);
 
-        status.textContent = stoppedByUser ? "Benchmark stopped and saved." : "Benchmark complete.";
+        const benchmarkType = memoryMode ? "memory" : "cpu";
+        const backend = kind === "memory-bandwidth"
+          ? "browser-memory-bandwidth"
+          : kind === "memory-latency" ? "browser-memory-latency" : "browser-webcrypto";
         const completedRun = {
           completedAt: new Date().toISOString(),
           threadCount: count,
-          hashes: totalHashes,
+          hashes: totalWork,
           elapsedSeconds: completedElapsedMs / 1000,
-          benchmarkType: "cpu",
-          backend: "browser-webcrypto"
+          benchmarkType,
+          backend,
+          ...(memoryMode ? { workingSetMiB } : {})
         };
-        if (completedRun.elapsedSeconds > 0) saveHistory(completedRun);
+        const hasResult = completedRun.elapsedSeconds > 0 && completedRun.hashes > 0;
+        if (hasResult) saveHistory(completedRun);
         const runCanBeSubmitted = completedRun.elapsedSeconds >= 1 && completedRun.elapsedSeconds <= 604_800;
-        latestRun = (!stoppedByUser || infiniteRun) && runCanBeSubmitted ? completedRun : null;
+        latestRun = benchmarkType === "cpu" && (!stoppedByUser || infiniteRun) && runCanBeSubmitted
+          ? completedRun
+          : null;
         submitResultButton.disabled = !latestRun;
-        if ((!stoppedByUser || infiniteRun) && !runCanBeSubmitted) {
+        if (!hasResult && memoryMode) {
+          status.textContent = "Memory test stopped during setup; no result was saved.";
+        } else if (memoryMode) {
+          status.textContent = stoppedByUser ? "Memory test stopped and saved locally." : "Memory test complete; saved locally.";
+        } else {
+          status.textContent = stoppedByUser ? "Benchmark stopped and saved." : "Benchmark complete.";
+        }
+        if (!memoryMode && (!stoppedByUser || infiniteRun) && !runCanBeSubmitted) {
           status.textContent = "Run saved locally; public submissions support runs from 1 second to 7 days.";
         }
         completedSuccessfully = true;
@@ -1290,8 +1667,11 @@
         startButton.textContent = "Start benchmark";
         startButton.classList.remove("is-running");
         durationSelect.disabled = false;
-        threadSelect.disabled = false;
+        threadSelect.disabled = selectedBenchmarkKind().startsWith("memory-");
+        benchmarkSelect.disabled = false;
         customWorkersInput.disabled = false;
+        memoryBandwidthWorkingSetInput.disabled = !appSettings.customizationUnlocked;
+        memoryLatencyWorkingSetInput.disabled = !appSettings.customizationUnlocked;
         if (infiniteRun) {
           progress.value = completedSuccessfully ? 100 : 0;
         } else if (progress.value >= 99.9) {
@@ -1300,23 +1680,50 @@
       }
     }
 
-    startButton.addEventListener("click", startBenchmark);
-    themeSelect.addEventListener("change", () => {
-      appSettings.theme = themeSelect.value;
-      applySettings();
-      if (saveSettings()) developerSettingsStatus.textContent = "Appearance preference saved.";
+    titleSettingsTrigger.addEventListener("click", () => {
+      if (typeof developerSettingsDialog.showModal === "function") {
+        developerSettingsDialog.showModal();
+      } else {
+        developerSettingsDialog.setAttribute("open", "");
+      }
+      if (appSettings.customizationUnlocked) {
+        themeSelect.focus();
+      } else {
+        developerCodeInput.focus();
+      }
     });
+    closeDeveloperSettingsButton.addEventListener("click", () => {
+      if (typeof developerSettingsDialog.close === "function") {
+        developerSettingsDialog.close();
+      } else {
+        developerSettingsDialog.removeAttribute("open");
+      }
+    });
+    developerSettingsDialog.addEventListener("click", (event) => {
+      if (event.target !== developerSettingsDialog) return;
+      if (typeof developerSettingsDialog.close === "function") {
+        developerSettingsDialog.close();
+      } else {
+        developerSettingsDialog.removeAttribute("open");
+      }
+    });
+    startButton.addEventListener("click", startBenchmark);
+    benchmarkSelect.addEventListener("change", updateBenchmarkControls);
+    themeSelect.addEventListener("change", saveCustomization);
     unlockDeveloperSettingsButton.addEventListener("click", unlockCustomization);
     accentColorInput.addEventListener("change", saveCustomization);
     fontScaleSelect.addEventListener("change", saveCustomization);
     customDurationInput.addEventListener("change", saveCustomization);
     customWorkersInput.addEventListener("change", saveCustomization);
+    memoryBandwidthWorkingSetInput.addEventListener("change", saveCustomization);
+    memoryLatencyWorkingSetInput.addEventListener("change", saveCustomization);
     clearHistoryButton.addEventListener("click", clearHistory);
     exportHistoryButton.addEventListener("click", exportHistory);
     refreshLeaderboardButton.addEventListener("click", refreshLeaderboard);
     submitResultButton.addEventListener("click", submitLatestRun);
     leaderboardSort.addEventListener("change", refreshLeaderboard);
     leaderboardType.addEventListener("change", refreshLeaderboard);
+    updateBenchmarkControls();
     detectDeviceDetails();
     refreshLeaderboard();
     loadHistory();

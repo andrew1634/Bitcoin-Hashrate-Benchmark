@@ -72,4 +72,4 @@ jobs:
             --title "Bitcoin Hashrate Benchmark $GITHUB_REF_NAME UNSTABLE beta" \
             --prerelease \
             --verify-tag \
-            --notes "UNSTABLE BETA: Includes Windows RAM bandwidth and memory latency tests, saved only to local history, plus light/dark appearance and developer-code customization controls in both apps. GPU benchmarking remains experimental and requires compatible hardware and drivers. Stop if your device gets hot or sluggish. CPU and GPU leaderboard scores are separate; all public results are unverified."
+            --notes "UNSTABLE BETA v1.0.9: Adds developer-unlocked browser RAM bandwidth and randomized latency tests, separate bounded browser working sets, and a redesigned browser settings flow. Browser memory runs and Windows RAM runs stay local and are not submitted to the leaderboard. Includes Windows x64 and ARM64 builds. GPU benchmarking remains experimental and requires compatible hardware and drivers. Stop if your device gets hot or sluggish. CPU and GPU leaderboard scores are separate; all public results are unverified."
