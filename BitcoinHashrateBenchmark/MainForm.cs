@@ -8,10 +8,12 @@ namespace BitcoinHashrateBenchmark;
 
 internal sealed class MainForm : Form
 {
-    private static readonly Color BackgroundColor = Color.White;
-    private static readonly Color PanelColor = Color.White;
-    private static readonly Color MutedColor = Color.FromArgb(96, 96, 96);
-    private static readonly Color AccentColor = SystemColors.Highlight;
+    private static Color BackgroundColor = Color.White;
+    private static Color PanelColor = Color.White;
+    private static Color MutedColor = Color.FromArgb(96, 96, 96);
+    private static Color AccentColor = SystemColors.Highlight;
+    private static Color TextColor = Color.Black;
+    private const string DeveloperUnlockCode = "Onlythedeveloperknows";
 
     private readonly ComboBox durationBox = new();
     private readonly ComboBox benchmarkModeBox = new();
@@ -24,7 +26,18 @@ internal sealed class MainForm : Form
     private readonly TextBox cpuModelBox = new();
     private readonly ComboBox architectureBox = new();
     private readonly ComboBox leaderboardTypeBox = new();
+    private readonly ComboBox themeBox = new();
+    private readonly ComboBox accentColorBox = new();
+    private readonly NumericUpDown fontSizeBox = new();
+    private readonly NumericUpDown customDurationBox = new();
+    private readonly NumericUpDown customThreadCountBox = new();
+    private readonly TextBox developerCodeBox = new();
+    private readonly Button unlockSettingsButton = new();
+    private readonly Button saveCustomizationButton = new();
+    private readonly Panel customizationPanel = new();
+    private readonly Dictionary<Control, float> originalFontSizes = new();
     private readonly Label statusLabel = new();
+    private readonly Label settingsStatusLabel = new();
     private readonly Label historyStatusLabel = new();
     private readonly Label leaderboardStatusLabel = new();
     private readonly Label deviceModelCaption = new();
@@ -38,10 +51,15 @@ internal sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer displayTimer = new() { Interval = 250 };
     private readonly BenchmarkHistoryStore historyStore = new();
     private readonly LeaderboardSettingsStore leaderboardSettingsStore = new();
+    private readonly AppSettingsStore appSettingsStore = new();
+    private AppSettings appSettings = new();
+    private Label rateCaption = new();
+    private Label workCaption = new();
     private CancellationTokenSource? runCancellation;
     private Stopwatch? runStopwatch;
     private BenchmarkResult? latestResult;
     private long latestHashes;
+    private TimeSpan latestElapsed;
     private int selectedSeconds;
     private int latestThreadCount;
     private bool infiniteRun;
@@ -51,15 +69,25 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.6 UNSTABLE";
+        Text = "Bitcoin Hashrate Benchmark v1.0.7 UNSTABLE";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);
         BackColor = BackgroundColor;
-        ForeColor = Color.Black;
+        ForeColor = TextColor;
         Font = new Font("Segoe UI", 10);
 
+        try
+        {
+            appSettings = appSettingsStore.Load();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            settingsStatusLabel.Text = $"Could not load preferences: {exception.Message}";
+        }
+        SetPalette();
         BuildInterface();
+        ApplyTheme();
         LoadHistory();
         LoadLeaderboardSettings();
         displayTimer.Tick += (_, _) => UpdateElapsed();
@@ -104,7 +132,7 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Local CPU/GPU SHA-256 benchmark · Version 1.0.6 UNSTABLE",
+            Text = "Local CPU/GPU and memory benchmark · Version 1.0.7 UNSTABLE",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
@@ -112,7 +140,7 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "UNSTABLE BETA: GPU results may be inaccurate; stop if your device gets hot or sluggish.",
+            Text = "UNSTABLE BETA: GPU and memory tests may be inaccurate; stop if your device gets hot or sluggish.",
             Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
             ForeColor = Color.FromArgb(150, 70, 0),
             AutoSize = true,
@@ -143,7 +171,7 @@ internal sealed class MainForm : Form
         threadCountCaption.ForeColor = MutedColor;
         settingsGrid.Controls.Add(threadCountCaption, 2, 0);
         benchmarkModeBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        benchmarkModeBox.Items.AddRange(["CPU", "GPU (Direct3D 12)"]);
+        benchmarkModeBox.Items.AddRange(["CPU", "GPU (Direct3D 12)", "Memory bandwidth", "Memory latency"]);
         benchmarkModeBox.SelectedIndex = 0;
         StyleInput(benchmarkModeBox);
         benchmarkModeBox.SelectedIndexChanged += (_, _) => UpdateBenchmarkMode();
@@ -154,8 +182,8 @@ internal sealed class MainForm : Form
         StyleInput(durationBox);
         settingsGrid.Controls.Add(durationBox, 1, 1);
         threadCountBox.Minimum = 1;
-        threadCountBox.Maximum = Math.Max(1, Environment.ProcessorCount);
-        threadCountBox.Value = Math.Max(1, Environment.ProcessorCount);
+        threadCountBox.Maximum = Math.Clamp(Environment.ProcessorCount, 1, 256);
+        threadCountBox.Value = Math.Clamp(Environment.ProcessorCount, 1, 256);
         threadCountBox.ThousandsSeparator = true;
         StyleInput(threadCountBox);
         settingsGrid.Controls.Add(threadCountBox, 2, 1);
@@ -175,9 +203,9 @@ internal sealed class MainForm : Form
             resultsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
         }
         resultsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        resultsLayout.Controls.Add(CreateMetric("HASH RATE", out rateLabel), 0, 0);
-        resultsLayout.Controls.Add(CreateMetric("TOTAL HASHES", out hashesLabel), 1, 0);
-        resultsLayout.Controls.Add(CreateMetric("ELAPSED", out elapsedLabel), 2, 0);
+        resultsLayout.Controls.Add(CreateMetric("HASH RATE", out rateCaption, out rateLabel), 0, 0);
+        resultsLayout.Controls.Add(CreateMetric("TOTAL HASHES", out workCaption, out hashesLabel), 1, 0);
+        resultsLayout.Controls.Add(CreateMetric("ELAPSED", out _, out elapsedLabel), 2, 0);
         results.Controls.Add(resultsLayout);
         benchmarkLayout.Controls.Add(results, 0, 2);
 
@@ -369,6 +397,308 @@ internal sealed class MainForm : Form
         leaderboardStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         leaderboardLayout.Controls.Add(leaderboardStatusLabel, 0, 5);
         tabs.TabPages.Add(leaderboardPage);
+        tabs.TabPages.Add(BuildSettingsPage());
+    }
+
+    private TabPage BuildSettingsPage()
+    {
+        var page = new TabPage("Settings") { BackColor = BackgroundColor };
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(24),
+            ColumnCount = 1,
+            RowCount = 5,
+            BackColor = BackgroundColor
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        page.Controls.Add(layout);
+
+        var heading = new Label
+        {
+            Text = "Appearance and developer settings",
+            Dock = DockStyle.Fill,
+            ForeColor = TextColor,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Segoe UI Semibold", 13, FontStyle.Bold)
+        };
+        layout.Controls.Add(heading, 0, 0);
+
+        themeBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        themeBox.Items.AddRange(["Light", "Dark"]);
+        themeBox.SelectedItem = appSettings.Theme == "dark" ? "Dark" : "Light";
+        StyleInput(themeBox);
+        themeBox.SelectedIndexChanged += (_, _) =>
+        {
+            appSettings = appSettings with
+            {
+                Theme = themeBox.SelectedItem?.ToString()?.ToLowerInvariant() ?? "light"
+            };
+            SaveAppSettings();
+            SetPalette();
+            ApplyTheme();
+        };
+        layout.Controls.Add(themeBox, 0, 1);
+
+        var codeRow = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = BackgroundColor,
+            Padding = new Padding(0, 6, 0, 0)
+        };
+        developerCodeBox.Width = 260;
+        developerCodeBox.PlaceholderText = "Developer code";
+        StyleInput(developerCodeBox);
+        codeRow.Controls.Add(developerCodeBox);
+        unlockSettingsButton.Text = appSettings.CustomizationUnlocked ? "Settings unlocked" : "Unlock settings";
+        unlockSettingsButton.AutoSize = true;
+        unlockSettingsButton.Click += (_, _) => UnlockDeveloperSettings();
+        codeRow.Controls.Add(unlockSettingsButton);
+        layout.Controls.Add(codeRow, 0, 2);
+
+        customizationPanel.Dock = DockStyle.Fill;
+        customizationPanel.Visible = appSettings.CustomizationUnlocked;
+        var customizationLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 2,
+            RowCount = 5,
+            BackColor = PanelColor,
+            Padding = new Padding(14)
+        };
+        customizationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        customizationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        for (var index = 0; index < 5; index++)
+        {
+            customizationLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        }
+
+        customizationLayout.Controls.Add(CreateCaption("ACCENT COLOR"), 0, 0);
+        accentColorBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        accentColorBox.Items.AddRange(["Green", "Blue", "Purple", "Orange"]);
+        accentColorBox.SelectedItem = char.ToUpperInvariant(appSettings.AccentColor[0]) + appSettings.AccentColor[1..];
+        StyleInput(accentColorBox);
+        customizationLayout.Controls.Add(accentColorBox, 1, 0);
+        customizationLayout.Controls.Add(CreateCaption("FONT SIZE"), 0, 1);
+        fontSizeBox.Minimum = 8;
+        fontSizeBox.Maximum = 20;
+        fontSizeBox.DecimalPlaces = 0;
+        fontSizeBox.Value = appSettings.FontSize;
+        StyleInput(fontSizeBox);
+        customizationLayout.Controls.Add(fontSizeBox, 1, 1);
+        customizationLayout.Controls.Add(CreateCaption("CUSTOM DURATION (SECONDS)"), 0, 2);
+        customDurationBox.Minimum = 1;
+        customDurationBox.Maximum = 86_400;
+        customDurationBox.Value = appSettings.CustomDurationSeconds;
+        StyleInput(customDurationBox);
+        customizationLayout.Controls.Add(customDurationBox, 1, 2);
+        customizationLayout.Controls.Add(CreateCaption("CUSTOM CPU THREADS"), 0, 3);
+        customThreadCountBox.Minimum = 1;
+        customThreadCountBox.Maximum = 256;
+        customThreadCountBox.Value = appSettings.CustomThreadCount;
+        StyleInput(customThreadCountBox);
+        customizationLayout.Controls.Add(customThreadCountBox, 1, 3);
+        saveCustomizationButton.Text = "Save customization";
+        saveCustomizationButton.Click += (_, _) => SaveCustomization();
+        customizationLayout.Controls.Add(saveCustomizationButton, 0, 4);
+        customizationLayout.SetColumnSpan(saveCustomizationButton, 2);
+        customizationPanel.Controls.Add(customizationLayout);
+        layout.Controls.Add(customizationPanel, 0, 3);
+
+        if (string.IsNullOrEmpty(settingsStatusLabel.Text))
+        {
+            settingsStatusLabel.Text = "To get the code, pay the developer or ask nicely for a secret code.";
+        }
+        settingsStatusLabel.Dock = DockStyle.Fill;
+        settingsStatusLabel.ForeColor = MutedColor;
+        settingsStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        layout.Controls.Add(settingsStatusLabel, 0, 4);
+        if (appSettings.CustomizationUnlocked)
+        {
+            EnableCustomization();
+        }
+
+        return page;
+    }
+
+    private void UnlockDeveloperSettings()
+    {
+        if (!string.Equals(developerCodeBox.Text, DeveloperUnlockCode, StringComparison.Ordinal))
+        {
+            settingsStatusLabel.Text = "That developer code was not accepted.";
+            return;
+        }
+
+        appSettings = appSettings with { CustomizationUnlocked = true };
+        if (!SaveAppSettings())
+        {
+            appSettings = appSettings with { CustomizationUnlocked = false };
+            return;
+        }
+
+        EnableCustomization();
+        settingsStatusLabel.Text = "Developer customization settings unlocked.";
+    }
+
+    private void EnableCustomization()
+    {
+        customizationPanel.Visible = true;
+        unlockSettingsButton.Text = "Settings unlocked";
+        threadCountBox.Maximum = 256;
+        if (!durationBox.Items.Contains("Custom (developer setting)"))
+        {
+            durationBox.Items.Add("Custom (developer setting)");
+        }
+
+        threadCountBox.Value = Math.Min(threadCountBox.Maximum, appSettings.CustomThreadCount);
+    }
+
+    private void SaveCustomization()
+    {
+        appSettings = appSettings with
+        {
+            AccentColor = accentColorBox.SelectedItem?.ToString()?.ToLowerInvariant() ?? "green",
+            FontSize = fontSizeBox.Value,
+            CustomDurationSeconds = (int)customDurationBox.Value,
+            CustomThreadCount = (int)customThreadCountBox.Value
+        };
+        if (!SaveAppSettings())
+        {
+            return;
+        }
+
+        threadCountBox.Value = appSettings.CustomThreadCount;
+        SetPalette();
+        ApplyTheme();
+        settingsStatusLabel.Text = "Customization saved.";
+    }
+
+    private bool SaveAppSettings()
+    {
+        try
+        {
+            appSettingsStore.Save(appSettings);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            settingsStatusLabel.Text = $"Could not save preferences: {exception.Message}";
+            return false;
+        }
+    }
+
+    private void SetPalette()
+    {
+        var dark = appSettings.Theme == "dark";
+        BackgroundColor = dark ? Color.FromArgb(15, 23, 42) : Color.FromArgb(241, 245, 249);
+        PanelColor = dark ? Color.FromArgb(30, 41, 59) : Color.White;
+        MutedColor = dark ? Color.FromArgb(148, 163, 184) : Color.FromArgb(100, 116, 139);
+        TextColor = dark ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
+        AccentColor = appSettings.AccentColor switch
+        {
+            "blue" => dark ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235),
+            "purple" => dark ? Color.FromArgb(192, 132, 252) : Color.FromArgb(124, 58, 237),
+            "orange" => dark ? Color.FromArgb(251, 146, 60) : Color.FromArgb(234, 88, 12),
+            _ => dark ? Color.FromArgb(74, 222, 128) : Color.FromArgb(22, 163, 74)
+        };
+    }
+
+    private void ApplyTheme()
+    {
+        BackColor = BackgroundColor;
+        ForeColor = TextColor;
+        foreach (Control control in Controls)
+        {
+            ApplyControlTheme(control);
+        }
+
+        if (originalFontSizes.Count == 0)
+        {
+            CaptureFontSizes(this);
+        }
+
+        var fontScale = appSettings.CustomizationUnlocked ? (float)appSettings.FontSize / 10 : 1;
+        foreach (var (control, baseSize) in originalFontSizes)
+        {
+            control.Font = new Font(control.Font.FontFamily, baseSize * fontScale, control.Font.Style);
+        }
+    }
+
+    private void ApplyControlTheme(Control control)
+    {
+        switch (control)
+        {
+            case TabPage:
+            case TableLayoutPanel:
+            case FlowLayoutPanel:
+                control.BackColor = BackgroundColor;
+                break;
+            case TabControl:
+                control.BackColor = BackgroundColor;
+                control.ForeColor = TextColor;
+                break;
+            case Form:
+                control.BackColor = BackgroundColor;
+                control.ForeColor = TextColor;
+                break;
+            case Panel:
+            case ListBox:
+                control.BackColor = PanelColor;
+                control.ForeColor = TextColor;
+                break;
+            case TextBox:
+            case ComboBox:
+            case NumericUpDown:
+                control.BackColor = appSettings.Theme == "dark"
+                    ? Color.FromArgb(17, 28, 48)
+                    : Color.White;
+                control.ForeColor = TextColor;
+                break;
+            case Label label:
+                var baseFontSize = originalFontSizes.TryGetValue(label, out var savedSize)
+                    ? savedSize
+                    : label.Font.Size;
+                label.ForeColor = baseFontSize <= 9
+                    || label == statusLabel
+                    || label == historyStatusLabel
+                    || label == leaderboardStatusLabel
+                    || label == settingsStatusLabel
+                    ? MutedColor
+                    : TextColor;
+                break;
+            case Button button:
+                button.UseVisualStyleBackColor = false;
+                button.BackColor = AccentColor;
+                button.ForeColor = appSettings.Theme == "dark" ? BackgroundColor : TextColor;
+                break;
+        }
+
+        foreach (Control child in control.Controls)
+        {
+            ApplyControlTheme(child);
+        }
+
+        if (control is ProgressBar progress)
+        {
+            progress.ForeColor = AccentColor;
+        }
+    }
+
+    private void CaptureFontSizes(Control parent)
+    {
+        foreach (Control control in parent.Controls)
+        {
+            originalFontSizes.TryAdd(control, control.Font.Size);
+            CaptureFontSizes(control);
+        }
     }
 
     private async Task ToggleBenchmarkAsync()
@@ -382,30 +712,45 @@ internal sealed class MainForm : Form
             return;
         }
 
-        infiniteRun = durationBox.SelectedIndex == 3;
-        selectedSeconds = infiniteRun ? 0 : durationBox.SelectedIndex switch
+        infiniteRun = string.Equals(durationBox.SelectedItem?.ToString(), "Infinite", StringComparison.Ordinal);
+        selectedSeconds = infiniteRun ? 0 : durationBox.SelectedItem?.ToString() switch
         {
-            0 => 5,
-            2 => 30,
+            "5 seconds" => 5,
+            "30 seconds" => 30,
+            "Custom (developer setting)" => appSettings.CustomDurationSeconds,
             _ => 10
         };
         stoppedByUser = false;
         var previousBenchmarkType = latestBenchmarkType;
         var hadLatestResult = latestResult.HasValue;
         var useGpu = benchmarkModeBox.SelectedIndex == 1;
-        var nextBenchmarkType = useGpu ? "gpu" : "cpu";
+        var useMemory = benchmarkModeBox.SelectedIndex is 2 or 3;
+        var nextBenchmarkType = useGpu ? "gpu" : useMemory ? "memory" : "cpu";
         if (hadLatestResult && previousBenchmarkType != nextBenchmarkType)
         {
-            deviceModelCaption.Text = useGpu ? "GPU MODEL (EDITABLE)" : "CPU MODEL (EDITABLE)";
-            cpuModelBox.Text = useGpu ? "Unreported GPU" : DetectCpuModel();
+            deviceModelCaption.Text = useGpu
+                ? "GPU MODEL (EDITABLE)"
+                : useMemory ? "MEMORY DEVICE" : "CPU MODEL (EDITABLE)";
+            cpuModelBox.Text = useGpu ? "Unreported GPU" : useMemory ? "System memory" : DetectCpuModel();
         }
         latestBenchmarkType = nextBenchmarkType;
-        latestBackend = useGpu ? GpuHashRateBenchmark.Backend : "windows-sha256";
-        latestThreadCount = useGpu ? 1 : (int)threadCountBox.Value;
+        latestBackend = useGpu
+            ? GpuHashRateBenchmark.Backend
+            : useMemory
+                ? benchmarkModeBox.SelectedIndex == 2 ? "ram-bandwidth" : "ram-latency"
+                : "windows-sha256";
+        latestThreadCount = useGpu || useMemory ? 1 : (int)threadCountBox.Value;
         latestResult = null;
         submitLeaderboardButton.Enabled = false;
         latestHashes = 0;
-        rateLabel.Text = "0 H/s";
+        latestElapsed = TimeSpan.Zero;
+        rateCaption.Text = latestBenchmarkType == "memory"
+            ? benchmarkModeBox.SelectedIndex == 2 ? "MEMORY BANDWIDTH" : "MEMORY LATENCY"
+            : "HASH RATE";
+        workCaption.Text = latestBackend == "ram-bandwidth"
+            ? "BYTES READ + WRITTEN"
+            : latestBackend == "ram-latency" ? "MEMORY ACCESSES" : "TOTAL HASHES";
+        rateLabel.Text = latestBenchmarkType == "memory" ? "0 MiB/s" : "0 H/s";
         hashesLabel.Text = "0";
         elapsedLabel.Text = "0.0 s";
         progressBar.Value = 0;
@@ -427,11 +772,19 @@ internal sealed class MainForm : Form
             var duration = infiniteRun ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(selectedSeconds);
             var result = useGpu
                 ? await GpuHashRateBenchmark.RunAsync(duration, progress, runCancellation.Token)
-                : await HashRateBenchmark.RunAsync(
-                    duration,
-                    latestThreadCount,
-                    progress,
-                    runCancellation.Token);
+                : useMemory
+                    ? await MemoryBenchmark.RunAsync(
+                        benchmarkModeBox.SelectedIndex == 2
+                            ? MemoryBenchmarkKind.Bandwidth
+                            : MemoryBenchmarkKind.Latency,
+                        duration,
+                        progress,
+                        runCancellation.Token)
+                    : await HashRateBenchmark.RunAsync(
+                        duration,
+                        latestThreadCount,
+                        progress,
+                        runCancellation.Token);
             UpdateProgress(new BenchmarkProgress(result.Hashes, result.Elapsed));
             statusLabel.Text = stoppedByUser
                 ? "Benchmark stopped and saved."
@@ -445,7 +798,7 @@ internal sealed class MainForm : Form
                 BenchmarkType = latestBenchmarkType,
                 Backend = latestBackend
             });
-            if (!stoppedByUser || infiniteRun)
+            if ((!stoppedByUser || infiniteRun) && !useMemory)
             {
                 latestResult = result;
                 var elapsedSeconds = result.Elapsed.TotalSeconds;
@@ -455,6 +808,10 @@ internal sealed class MainForm : Form
                     statusLabel.Text = "Run saved locally; public submissions support runs from 1 second to 7 days.";
                 }
             }
+        }
+        catch (OperationCanceledException) when (stoppedByUser && latestBenchmarkType == "memory")
+        {
+            statusLabel.Text = "Benchmark stopped during memory test setup.";
         }
         catch (Exception exception)
         {
@@ -478,8 +835,9 @@ internal sealed class MainForm : Form
     private void UpdateProgress(BenchmarkProgress progress)
     {
         latestHashes = progress.Hashes;
+        latestElapsed = progress.Elapsed;
         var rate = progress.Elapsed.TotalSeconds > 0 ? progress.Hashes / progress.Elapsed.TotalSeconds : 0;
-        rateLabel.Text = FormatRate(rate);
+        rateLabel.Text = FormatCurrentRate(rate);
         hashesLabel.Text = progress.Hashes.ToString("N0");
         elapsedLabel.Text = $"{progress.Elapsed.TotalSeconds:F1} s";
         if (!infiniteRun)
@@ -498,16 +856,17 @@ internal sealed class MainForm : Form
             return;
         }
 
-        elapsedLabel.Text = $"{runStopwatch.Elapsed.TotalSeconds:F1} s";
-        if (runStopwatch.Elapsed.TotalSeconds > 0)
+        var elapsedTime = latestBenchmarkType == "memory" ? latestElapsed : runStopwatch.Elapsed;
+        elapsedLabel.Text = $"{elapsedTime.TotalSeconds:F1} s";
+        if (elapsedTime.TotalSeconds > 0)
         {
-            rateLabel.Text = FormatRate(latestHashes / runStopwatch.Elapsed.TotalSeconds);
+            rateLabel.Text = FormatCurrentRate(latestHashes / elapsedTime.TotalSeconds);
         }
 
         if (!infiniteRun)
         {
             progressBar.Value = Math.Clamp(
-                (int)(runStopwatch.Elapsed.TotalSeconds / selectedSeconds * 100),
+                (int)(elapsedTime.TotalSeconds / selectedSeconds * 100),
                 0,
                 100);
         }
@@ -523,21 +882,30 @@ internal sealed class MainForm : Form
     private void UpdateBenchmarkMode()
     {
         var gpuSelected = benchmarkModeBox.SelectedIndex == 1;
-        threadCountBox.Enabled = !gpuSelected && runCancellation is null;
-        threadCountCaption.Text = gpuSelected ? "GPU DISPATCH" : "CPU LOGICAL THREADS";
+        var memorySelected = benchmarkModeBox.SelectedIndex is 2 or 3;
+        threadCountBox.Enabled = !gpuSelected && !memorySelected && runCancellation is null;
+        threadCountCaption.Text = gpuSelected
+            ? "GPU DISPATCH"
+            : memorySelected ? "MEMORY TEST" : "CPU LOGICAL THREADS";
         if (latestResult.HasValue)
         {
             statusLabel.Text = $"Device details describe the latest {latestBenchmarkType.ToUpperInvariant()} run.";
             return;
         }
 
-        deviceModelCaption.Text = gpuSelected ? "GPU MODEL (EDITABLE)" : "CPU MODEL (EDITABLE)";
-        cpuModelBox.Text = gpuSelected ? "Unreported GPU" : DetectCpuModel();
+        deviceModelCaption.Text = gpuSelected
+            ? "GPU MODEL (EDITABLE)"
+            : memorySelected ? "MEMORY DEVICE" : "CPU MODEL (EDITABLE)";
+        cpuModelBox.Text = gpuSelected
+            ? "Unreported GPU"
+            : memorySelected ? "System memory" : DetectCpuModel();
         if (runCancellation is null)
         {
             statusLabel.Text = gpuSelected
                 ? "Requires a Direct3D 12 GPU. Stop if your device gets hot or sluggish."
-                : "Ready when you are.";
+                : memorySelected
+                    ? "Bandwidth uses two 64 MiB buffers; latency uses a 64 MiB chain and setup array. Stop if your device gets hot or sluggish."
+                    : "Ready when you are.";
         }
     }
 
@@ -721,16 +1089,41 @@ internal sealed class MainForm : Form
         foreach (var entry in entries)
         {
             var benchmarkType = entry.BenchmarkType.ToUpperInvariant();
-            var benchmarkDetails = entry.BenchmarkType == "cpu"
-                ? $"{entry.ThreadCount} threads"
-                : entry.Backend;
-            historyList.Items.Add(
-                $"{entry.CompletedAt.LocalDateTime:g} | {benchmarkType} · {entry.Backend} | "
-                + $"{entry.ElapsedSeconds:F1} s | {benchmarkDetails} | {entry.Hashes:N0} hashes | "
-                + $"{FormatRate(entry.HashesPerSecond)}");
+            if (entry.BenchmarkType == "memory")
+            {
+                var rate = entry.HashesPerSecond;
+                var memoryResult = entry.Backend == "ram-bandwidth"
+                    ? $"{rate / 1_048_576:F2} MiB/s read + write"
+                    : $"{(rate > 0 ? 1_000_000_000 / rate : 0):F2} ns/access";
+                historyList.Items.Add(
+                    $"{entry.CompletedAt.LocalDateTime:g} | MEMORY · {entry.Backend} | "
+                    + $"{entry.ElapsedSeconds:F1} s | {memoryResult}");
+            }
+            else
+            {
+                var benchmarkDetails = entry.BenchmarkType == "cpu"
+                    ? $"{entry.ThreadCount} threads"
+                    : entry.Backend;
+                historyList.Items.Add(
+                    $"{entry.CompletedAt.LocalDateTime:g} | {benchmarkType} · {entry.Backend} | "
+                    + $"{entry.ElapsedSeconds:F1} s | {benchmarkDetails} | {entry.Hashes:N0} hashes | "
+                    + $"{FormatRate(entry.HashesPerSecond)}");
+            }
         }
         historyList.EndUpdate();
         clearHistoryButton.Enabled = historyList.Items.Count > 0;
+    }
+
+    private string FormatCurrentRate(double workPerSecond)
+    {
+        if (latestBenchmarkType != "memory")
+        {
+            return FormatRate(workPerSecond);
+        }
+
+        return latestBackend == "ram-bandwidth"
+            ? $"{workPerSecond / 1_048_576:F2} MiB/s"
+            : $"{(workPerSecond > 0 ? 1_000_000_000 / workPerSecond : 0):F2} ns/access";
     }
 
     private static string FormatRate(double hashesPerSecond) =>
@@ -758,22 +1151,23 @@ internal sealed class MainForm : Form
         Margin = new Padding(0, 0, 0, 4)
     };
 
-    private static Panel CreateMetric(string title, out Label value)
+    private static Panel CreateMetric(string title, out Label caption, out Label value)
     {
         var panel = new Panel { Dock = DockStyle.Fill, BackColor = PanelColor };
-        panel.Controls.Add(new Label
+        caption = new Label
         {
             Text = title,
             AutoSize = true,
             ForeColor = MutedColor,
             Font = new Font("Segoe UI Semibold", 8, FontStyle.Bold),
             Location = new Point(0, 1)
-        });
+        };
+        panel.Controls.Add(caption);
         value = new Label
         {
             Text = "—",
             AutoSize = true,
-            ForeColor = Color.Black,
+            ForeColor = TextColor,
             Font = new Font("Segoe UI Semibold", 16, FontStyle.Bold),
             Location = new Point(0, 23)
         };
@@ -786,7 +1180,7 @@ internal sealed class MainForm : Form
         control.Dock = DockStyle.Fill;
         control.Margin = new Padding(0);
         control.BackColor = Color.White;
-        control.ForeColor = Color.Black;
+        control.ForeColor = TextColor;
         control.Font = new Font("Segoe UI", 10);
     }
 }

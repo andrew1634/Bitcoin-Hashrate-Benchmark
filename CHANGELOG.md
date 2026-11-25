@@ -2,6 +2,20 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.7] - Unstable Beta
+
+### Added
+
+- Windows-only timed RAM read/write bandwidth and randomized pointer-chase latency benchmarks.
+- Light/dark theme selection in the browser and Windows desktop app.
+- Developer-code-gated customization for accent color, font size, custom test duration, and CPU worker count.
+
+### Notes
+
+- Memory benchmark results are stored locally and are not submitted to the CPU/GPU leaderboard.
+- The developer code is checked client-side and does not verify payment.
+- The Windows memory test uses two 64 MiB buffers for bandwidth and a 64 MiB pointer chain plus a 64 MiB setup array for latency.
+
 ## [1.0.6] - Unstable Beta
 
 ### Added

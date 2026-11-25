@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark v1.0.6 UNSTABLE</title>
+  <title>Browser Hashrate Benchmark v1.0.7 UNSTABLE</title>
   <style>
     :root {
       color-scheme: dark;
@@ -12,6 +12,8 @@
       background: #0b1120;
       color: #f8fafc;
       font-synthesis: none;
+      --user-accent: #4ade80;
+      --user-accent-strong: #22c55e;
     }
 
     body {
@@ -43,7 +45,7 @@
       border: 1px solid rgb(74 222 128 / 30%);
       border-radius: 12px;
       background: rgb(34 197 94 / 12%);
-      color: #4ade80;
+      color: var(--user-accent);
       font-size: 1.2rem;
       font-weight: 800;
     }
@@ -100,7 +102,7 @@
     }
 
     h1 span {
-      background: linear-gradient(90deg, #4ade80, #a3e635);
+      background: linear-gradient(90deg, var(--user-accent), #a3e635);
       background-clip: text;
       color: transparent;
     }
@@ -187,19 +189,19 @@
       border: 0;
       border-radius: 99px;
       background: #334155;
-      accent-color: #4ade80;
+      accent-color: var(--user-accent);
     }
 
     progress::-webkit-progress-bar { border-radius: 99px; background: #334155; }
     progress::-webkit-progress-value {
       border-radius: 99px;
-      background: linear-gradient(90deg, #22c55e, #a3e635);
+      background: linear-gradient(90deg, var(--user-accent-strong), #a3e635);
       transition: width 180ms ease;
     }
 
     button {
       border: 0;
-      background: linear-gradient(100deg, #4ade80, #a3e635);
+      background: linear-gradient(100deg, var(--user-accent), #a3e635);
       color: #082313;
       font-weight: 800;
       cursor: pointer;
@@ -218,7 +220,7 @@
       height: 8px;
       flex: 0 0 8px;
       border-radius: 50%;
-      background: #4ade80;
+      background: var(--user-accent);
       content: "";
     }
 
@@ -290,6 +292,31 @@
     }
 
     .leaderboard-actions label { margin: 0; }
+    .developer-settings { margin: 16px 0; }
+    .developer-settings summary { cursor: pointer; font-weight: 750; }
+    .developer-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .developer-settings input, .developer-settings select {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px solid #3b4b62;
+      border-radius: 10px;
+      background: #111c30;
+      color: #f8fafc;
+      font: inherit;
+    }
+
+    .developer-settings input[type="color"] { padding: 4px; }
+    .developer-settings .full-width { grid-column: 1 / -1; }
+    .developer-settings p { margin: 8px 0; font-size: 0.88rem; }
+    #developer-settings-status { min-height: 1.5em; margin: 10px 0 0; }
 
     #leaderboard-status, #hardware-status { min-height: 1.5em; margin: 12px 0 0; font-size: 0.85rem; }
     #leaderboard-status { color: #94a3b8; }
@@ -331,7 +358,82 @@
       .local-pill { font-size: 0.62rem; }
       .leaderboard-options { grid-template-columns: 1fr; }
       .leaderboard-item { grid-template-columns: 1fr 1fr; }
+      .developer-settings-grid { grid-template-columns: 1fr; }
+      .developer-settings .full-width { grid-column: auto; }
     }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    :root[data-theme="light"] body {
+      background:
+        radial-gradient(ellipse at 12% 0%, rgb(34 197 94 / 8%), transparent 34rem),
+        radial-gradient(ellipse at 100% 35%, rgb(59 130 246 / 6%), transparent 32rem);
+    }
+
+    :root[data-theme="light"] .eyebrow,
+    :root[data-theme="light"] .section-index,
+    :root[data-theme="light"] label,
+    :root[data-theme="light"] .metric-label { color: #475569; }
+    :root[data-theme="light"] .local-pill {
+      border-color: #cbd5e1;
+      background: rgb(255 255 255 / 85%);
+      color: #334155;
+    }
+    :root[data-theme="light"] .unstable-notice {
+      border-color: #f59e0b;
+      background: #fef3c7;
+      color: #78350f;
+    }
+    :root[data-theme="light"] .unstable-notice p { color: #78350f; }
+    :root[data-theme="light"] p { color: #334155; }
+    :root[data-theme="light"] .card {
+      border-color: #cbd5e1;
+      background: linear-gradient(145deg, #fff, #f8fafc);
+      box-shadow: 0 18px 50px rgb(15 23 42 / 8%);
+    }
+    :root[data-theme="light"] select,
+    :root[data-theme="light"] .leaderboard-options input,
+    :root[data-theme="light"] .leaderboard-options select,
+    :root[data-theme="light"] .leaderboard-actions select,
+    :root[data-theme="light"] .developer-settings input,
+    :root[data-theme="light"] .developer-settings select {
+      border-color: #cbd5e1;
+      background: #fff;
+      color: #0f172a;
+    }
+    :root[data-theme="light"] .metric {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    :root[data-theme="light"] .metric:first-child {
+      border-color: rgb(22 163 74 / 28%);
+      background: #ecfdf5;
+    }
+    :root[data-theme="light"] .metric:first-child .metric-value { color: #166534; }
+    :root[data-theme="light"] progress { background: #cbd5e1; }
+    :root[data-theme="light"] progress::-webkit-progress-bar { background: #cbd5e1; }
+    :root[data-theme="light"] button { color: #052e16; }
+    :root[data-theme="light"] button.is-running { color: #fff7ed; }
+    :root[data-theme="light"] .history-item,
+    :root[data-theme="light"] .leaderboard-item {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    :root[data-theme="light"] .history-details,
+    :root[data-theme="light"] #history-status,
+    :root[data-theme="light"] #leaderboard-status,
+    :root[data-theme="light"] #hardware-status,
+    :root[data-theme="light"] .leaderboard-detail,
+    :root[data-theme="light"] .note { color: #475569; }
+    :root[data-theme="light"] #status { color: #334155; }
+    :root[data-theme="light"] .developer-settings { color: #0f172a; }
+    :root[data-theme="light"] .developer-settings summary { color: #0f172a; }
+    :root[data-theme="light"] .developer-settings p { color: #334155; }
   </style>
 </head>
 <body>
@@ -345,7 +447,7 @@
     </header>
 
     <aside class="unstable-notice" role="note" aria-label="Unstable beta warning">
-      <strong>UNSTABLE BETA · v1.0.6</strong>
+      <strong>UNSTABLE BETA · v1.0.7</strong>
       <p>
         This browser version benchmarks the CPU only. Long runs can create sustained
         load and heat; stop if the device gets hot or sluggish. Results are unverified.
@@ -379,8 +481,54 @@
           <label for="threads">LOGICAL CPU WORKERS</label>
           <select id="threads"></select>
         </div>
+        <div>
+          <label for="theme">APPEARANCE</label>
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
       </div>
     </section>
+
+    <details class="card developer-settings">
+      <summary>Developer settings</summary>
+      <p>To get the code, pay the developer or ask nicely for a secret code.</p>
+      <div class="developer-settings-grid">
+        <div>
+          <label for="developer-code">DEVELOPER CODE</label>
+          <input id="developer-code" type="password" autocomplete="off">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button id="unlock-developer-settings" type="button">Unlock settings</button>
+        </div>
+      </div>
+      <div class="developer-settings-grid" id="customization-controls" hidden>
+        <div>
+          <label for="accent-color">ACCENT COLOR</label>
+          <input id="accent-color" type="color" value="#4ade80">
+        </div>
+        <div>
+          <label for="font-scale">FONT SIZE</label>
+          <select id="font-scale">
+            <option value="90">Small</option>
+            <option value="100">Standard</option>
+            <option value="110">Large</option>
+            <option value="125">Extra large</option>
+          </select>
+        </div>
+        <div>
+          <label for="custom-duration">CUSTOM TEST DURATION (SECONDS)</label>
+          <input id="custom-duration" type="number" min="1" max="86400" value="60">
+        </div>
+        <div>
+          <label for="custom-workers">CUSTOM CPU WORKERS</label>
+          <input id="custom-workers" type="number" min="1" max="64" value="4">
+        </div>
+      </div>
+      <p id="developer-settings-status" class="full-width" role="status" aria-live="polite"></p>
+    </details>
 
     <section class="card" aria-labelledby="results-heading">
       <div class="section-heading">
@@ -474,7 +622,7 @@
       Browser and Windows app results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
-    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.6.</p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.7.</p>
   </main>
 
   <script>
@@ -538,6 +686,7 @@
 
     const durationSelect = document.querySelector("#duration");
     const threadSelect = document.querySelector("#threads");
+    const themeSelect = document.querySelector("#theme");
     const startButton = document.querySelector("#start");
     const status = document.querySelector("#status");
     const rate = document.querySelector("#rate");
@@ -557,17 +706,106 @@
     const hardwareStatus = document.querySelector("#hardware-status");
     const refreshLeaderboardButton = document.querySelector("#refresh-leaderboard");
     const submitResultButton = document.querySelector("#submit-result");
+    const developerCodeInput = document.querySelector("#developer-code");
+    const unlockDeveloperSettingsButton = document.querySelector("#unlock-developer-settings");
+    const customizationControls = document.querySelector("#customization-controls");
+    const developerSettingsStatus = document.querySelector("#developer-settings-status");
+    const accentColorInput = document.querySelector("#accent-color");
+    const fontScaleSelect = document.querySelector("#font-scale");
+    const customDurationInput = document.querySelector("#custom-duration");
+    const customWorkersInput = document.querySelector("#custom-workers");
     const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 64));
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
+    const settingsKey = "bitcoin-hashrate-benchmark.settings.v1";
     const historyLimit = 10;
+    const developerUnlockCode = "Onlythedeveloperknows";
     const apiBaseUrl = location.protocol === "file:"
       ? "https://bitcoin-hashrate-benchmark.azgasgiant220.workers.dev"
       : location.origin;
     let latestRun = null;
+    let appSettings = {
+      theme: "dark",
+      accentColor: "#4ade80",
+      fontScale: 100,
+      customDurationSeconds: 60,
+      customWorkerCount: Math.min(workerCount, 4),
+      customizationUnlocked: false
+    };
+
+    function loadSettings() {
+      try {
+        const saved = globalThis.localStorage.getItem(settingsKey);
+        if (saved === null) return;
+        const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== "object"
+          || !["dark", "light"].includes(parsed.theme)
+          || !/^#[0-9a-f]{6}$/i.test(parsed.accentColor)
+          || ![90, 100, 110, 125].includes(parsed.fontScale)
+          || !Number.isInteger(parsed.customDurationSeconds)
+          || parsed.customDurationSeconds < 1
+          || parsed.customDurationSeconds > 86400
+          || !Number.isInteger(parsed.customWorkerCount)
+          || parsed.customWorkerCount < 1
+          || parsed.customWorkerCount > 64
+          || typeof parsed.customizationUnlocked !== "boolean") {
+          throw new Error("Saved settings contain invalid values.");
+        }
+        appSettings = parsed;
+      } catch (error) {
+        developerSettingsStatus.textContent = `Could not load preferences: ${error instanceof Error ? error.message : String(error)}`;
+      }
+    }
+
+    function saveSettings() {
+      try {
+        globalThis.localStorage.setItem(settingsKey, JSON.stringify(appSettings));
+        return true;
+      } catch (error) {
+        developerSettingsStatus.textContent = `Could not save preferences: ${error instanceof Error ? error.message : String(error)}`;
+        return false;
+      }
+    }
+
+    function applySettings() {
+      themeSelect.value = appSettings.theme;
+      document.documentElement.dataset.theme = appSettings.theme;
+      document.querySelector('meta[name="color-scheme"]').content = appSettings.theme;
+      document.documentElement.style.setProperty("--user-accent", appSettings.accentColor);
+      document.documentElement.style.setProperty("--user-accent-strong", appSettings.accentColor);
+      document.documentElement.style.fontSize = `${appSettings.fontScale}%`;
+      accentColorInput.value = appSettings.accentColor;
+      fontScaleSelect.value = String(appSettings.fontScale);
+      customDurationInput.value = String(appSettings.customDurationSeconds);
+      customWorkersInput.value = String(appSettings.customWorkerCount);
+      customizationControls.hidden = !appSettings.customizationUnlocked;
+      if (appSettings.customizationUnlocked) {
+        if (!Array.from(durationSelect.options).some((option) => option.value === "custom")) {
+          durationSelect.add(new Option("Custom duration", "custom"));
+        }
+        if (!Array.from(threadSelect.options).some((option) => option.value === "custom")) {
+          threadSelect.add(new Option("Custom worker count", "custom"));
+        }
+      }
+    }
+
+    function activeWorkerCount() {
+      return threadSelect.value === "custom"
+        ? Number(customWorkersInput.value)
+        : Number(threadSelect.value);
+    }
+
+    function activeDurationSeconds() {
+      return durationSelect.value === "custom"
+        ? Number(customDurationInput.value)
+        : Number(durationSelect.value);
+    }
+
+    loadSettings();
 
     for (let count = 1; count <= workerCount; count++) {
       threadSelect.add(new Option(String(count), String(count), false, count === workerCount));
     }
+    applySettings();
 
     let workers = [];
     let running = false;
@@ -586,6 +824,37 @@
 
     function formatPerThreadRate(value) {
       return `${formatRate(value).replace("H/s", "H/s/thread")}`;
+    }
+
+    function unlockCustomization() {
+      if (developerCodeInput.value !== developerUnlockCode) {
+        developerSettingsStatus.textContent = "That developer code was not accepted.";
+        return;
+      }
+
+      appSettings.customizationUnlocked = true;
+      applySettings();
+      if (saveSettings()) developerSettingsStatus.textContent = "Developer customization settings unlocked.";
+    }
+
+    function saveCustomization() {
+      const duration = Number(customDurationInput.value);
+      const customWorkers = Number(customWorkersInput.value);
+      if (!Number.isInteger(duration) || duration < 1 || duration > 86400
+        || !Number.isInteger(customWorkers) || customWorkers < 1 || customWorkers > 64) {
+        developerSettingsStatus.textContent = "Duration must be 1–86,400 seconds and workers must be 1–64.";
+        return;
+      }
+
+      appSettings = {
+        ...appSettings,
+        accentColor: accentColorInput.value,
+        fontScale: Number(fontScaleSelect.value),
+        customDurationSeconds: duration,
+        customWorkerCount: customWorkers
+      };
+      applySettings();
+      if (saveSettings()) developerSettingsStatus.textContent = "Customization saved.";
     }
 
     function normalizeArchitecture(architecture, bitness) {
@@ -796,7 +1065,7 @@
     function updateDisplay(elapsedMs) {
       totalHashes = workerHashes.reduce((sum, count) => sum + count, 0);
       const seconds = elapsedMs / 1000;
-      const activeThreads = Number(threadSelect.value);
+      const activeThreads = activeWorkerCount();
       const hashesPerThreadPerSecond = seconds > 0
         ? totalHashes / seconds / activeThreads
         : 0;
@@ -807,7 +1076,7 @@
       if (durationSelect.value === "infinite") {
         progress.removeAttribute("value");
       } else {
-        progress.value = Math.min(100, seconds / Number(durationSelect.value) * 100);
+        progress.value = Math.min(100, seconds / activeDurationSeconds() * 100);
       }
     }
 
@@ -832,8 +1101,15 @@
       }
 
       const infiniteRun = durationSelect.value === "infinite";
+      const count = activeWorkerCount();
+      const durationSeconds = activeDurationSeconds();
       if (!globalThis.crypto?.subtle || typeof Worker === "undefined") {
         status.textContent = "This browser does not support the required Web Crypto or Worker APIs.";
+        return;
+      }
+      if (!Number.isInteger(count) || count < 1 || count > 64
+        || (!infiniteRun && (!Number.isFinite(durationSeconds) || durationSeconds < 1 || durationSeconds > 86400))) {
+        status.textContent = "Choose a valid worker count and test duration.";
         return;
       }
 
@@ -857,12 +1133,12 @@
       startButton.classList.add("is-running");
       durationSelect.disabled = true;
       threadSelect.disabled = true;
-      const count = Number(threadSelect.value);
+      customWorkersInput.disabled = true;
       status.textContent = infiniteRun
         ? `Running with ${count} logical CPU worker(s); stop when ready.`
         : `Running with ${count} logical CPU worker(s)...`;
       const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
-      const durationMs = infiniteRun ? Number.POSITIVE_INFINITY : Number(durationSelect.value) * 1000;
+      const durationMs = infiniteRun ? Number.POSITIVE_INFINITY : durationSeconds * 1000;
       startedAt = performance.now();
       displayTimer = setInterval(() => updateDisplay(performance.now() - startedAt), 250);
       let completedElapsedMs = 0;
@@ -928,6 +1204,7 @@
         startButton.classList.remove("is-running");
         durationSelect.disabled = false;
         threadSelect.disabled = false;
+        customWorkersInput.disabled = false;
         if (infiniteRun) {
           progress.value = completedSuccessfully ? 100 : 0;
         } else if (progress.value >= 99.9) {
@@ -937,6 +1214,16 @@
     }
 
     startButton.addEventListener("click", startBenchmark);
+    themeSelect.addEventListener("change", () => {
+      appSettings.theme = themeSelect.value;
+      applySettings();
+      if (saveSettings()) developerSettingsStatus.textContent = "Appearance preference saved.";
+    });
+    unlockDeveloperSettingsButton.addEventListener("click", unlockCustomization);
+    accentColorInput.addEventListener("change", saveCustomization);
+    fontScaleSelect.addEventListener("change", saveCustomization);
+    customDurationInput.addEventListener("change", saveCustomization);
+    customWorkersInput.addEventListener("change", saveCustomization);
     clearHistoryButton.addEventListener("click", clearHistory);
     refreshLeaderboardButton.addEventListener("click", refreshLeaderboard);
     submitResultButton.addEventListener("click", submitLatestRun);

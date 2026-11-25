@@ -1,6 +1,6 @@
 # Bitcoin Hashrate Benchmark
 
-**Browser and Windows desktop UNSTABLE beta v1.0.6**
+**Browser and Windows desktop UNSTABLE beta v1.0.7**
 
 > **UNSTABLE BETA WARNING:** Long-running tests can create sustained device load and heat; stop if your device gets hot or sluggish. Windows GPU benchmarking is experimental. All public scores are unverified.
 
@@ -12,7 +12,7 @@
 
 A local benchmark for comparing how devices perform SHA-256 double hashing. The Windows desktop app and standalone browser version are for learning and performance testing only. The Windows app can be published for x64 and ARM64; the browser version can run on compatible Windows, Android, and iOS browsers, including on ARM32 and ARM64 devices.
 
-Version 1.0.6 is an unstable beta. Runs can continue until stopped manually. Use logical processors reported by the operating system or browser; Hyper-Threading is available only when the device and platform expose it.
+Version 1.0.7 is an unstable beta. Runs can continue until stopped manually. Use logical processors reported by the operating system or browser; Hyper-Threading is available only when the device and platform expose it. The Windows app also includes timed RAM bandwidth and memory-latency tests; these results stay local and do not appear on the CPU/GPU leaderboard.
 
 ## What this measures
 
@@ -20,7 +20,9 @@ Both versions repeatedly hash a synthetic 80-byte header with SHA-256 twice, sim
 
 ## Run in a browser
 
-Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The browser benchmark is CPU-only, architecture-independent, and can run on ARM32 and ARM64 devices. It offers up to 64 workers based on the browser-reported logical processor count. Choose **Infinite** to run until you press **Stop**. The last 10 runs are saved locally in the browser; use **Clear history** to remove them. A page opened as a local file can use the public leaderboard too; it connects to the hosted Worker API over HTTPS. The page can still display CPU or Windows GPU leaderboard results.
+Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The browser benchmark is CPU-only, architecture-independent, and can run on ARM32 and ARM64 devices. It offers up to 64 workers based on the browser-reported logical processor count. Choose **Infinite** to run until you press **Stop**. Choose **Light** or **Dark** under appearance to change the theme. The last 10 runs are saved locally in the browser; use **Clear history** to remove them. A page opened as a local file can use the public leaderboard too; it connects to the hosted Worker API over HTTPS. The page can still display CPU or Windows GPU leaderboard results.
+
+Both apps include a developer-settings unlock. The code is checked on-device and is not payment verification; the request for payment or to ask the developer is informational. Unlocked controls include accent color, font size, custom run duration, and custom CPU worker count.
 
 ## Optional public leaderboard
 
@@ -55,7 +57,7 @@ Install the .NET 10 SDK, then from this repository run:
 dotnet run --project .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj
 ```
 
-The desktop app saves the last 10 runs to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\history.json`.
+The desktop app saves the last 10 runs to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\history.json` and preferences to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\settings.json`. Memory bandwidth uses two 64 MiB buffers. The latency test traverses a randomized 64 MiB pointer chain and uses a 64 MiB setup array. Memory results are only stored locally.
 
 To publish a self-contained, single-file Windows x64 app:
 

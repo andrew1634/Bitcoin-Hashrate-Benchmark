@@ -60,7 +60,7 @@ internal sealed class BenchmarkHistoryStore
                 || entry.CompletedAt == default
                 || entry.ThreadCount < 1
                 || entry.Hashes < 0
-                || entry.BenchmarkType is not ("cpu" or "gpu")
+                || entry.BenchmarkType is not ("cpu" or "gpu" or "memory")
                 || string.IsNullOrWhiteSpace(entry.Backend)
                 || !double.IsFinite(entry.ElapsedSeconds)
                 || entry.ElapsedSeconds <= 0)

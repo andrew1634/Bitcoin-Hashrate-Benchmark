@@ -72,4 +72,4 @@ jobs:
             --title "Bitcoin Hashrate Benchmark $GITHUB_REF_NAME UNSTABLE beta" \
             --prerelease \
             --verify-tag \
-            --notes "UNSTABLE BETA: GPU benchmarking is experimental and may fail or produce inaccurate results. Stop if your device gets hot or sluggish. Public results are unverified. GPU support requires compatible hardware and drivers; CPU and GPU scores are ranked separately."
+            --notes "UNSTABLE BETA: Includes Windows RAM bandwidth and memory latency tests, saved only to local history, plus light/dark appearance and developer-code customization controls in both apps. GPU benchmarking remains experimental and requires compatible hardware and drivers. Stop if your device gets hot or sluggish. CPU and GPU leaderboard scores are separate; all public results are unverified."
