@@ -44,12 +44,14 @@ internal sealed class MainForm : Form
     private long latestHashes;
     private int selectedSeconds;
     private int latestThreadCount;
+    private bool infiniteRun;
+    private bool stoppedByUser;
     private string latestBenchmarkType = "cpu";
     private string latestBackend = "windows-sha256";
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.5 UNSTABLE";
+        Text = "Bitcoin Hashrate Benchmark v1.0.6 UNSTABLE";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);
@@ -102,7 +104,7 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Local CPU/GPU SHA-256 benchmark · Version 1.0.5 UNSTABLE",
+            Text = "Local CPU/GPU SHA-256 benchmark · Version 1.0.6 UNSTABLE",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
@@ -135,7 +137,7 @@ internal sealed class MainForm : Form
         settings.Controls.Add(settingsGrid);
         settingsGrid.Controls.Add(CreateCaption("BENCHMARK DEVICE"), 0, 0);
         settingsGrid.Controls.Add(CreateCaption("TEST DURATION"), 1, 0);
-        threadCountCaption.Text = "CPU THREADS";
+        threadCountCaption.Text = "CPU LOGICAL THREADS";
         threadCountCaption.Dock = DockStyle.Fill;
         threadCountCaption.TextAlign = ContentAlignment.BottomLeft;
         threadCountCaption.ForeColor = MutedColor;
@@ -147,7 +149,7 @@ internal sealed class MainForm : Form
         benchmarkModeBox.SelectedIndexChanged += (_, _) => UpdateBenchmarkMode();
         settingsGrid.Controls.Add(benchmarkModeBox, 0, 1);
         durationBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        durationBox.Items.AddRange(["5 seconds", "10 seconds", "30 seconds"]);
+        durationBox.Items.AddRange(["5 seconds", "10 seconds", "30 seconds", "Infinite"]);
         durationBox.SelectedIndex = 1;
         StyleInput(durationBox);
         settingsGrid.Controls.Add(durationBox, 1, 1);
@@ -373,18 +375,21 @@ internal sealed class MainForm : Form
     {
         if (runCancellation is not null)
         {
+            stoppedByUser = true;
             runCancellation.Cancel();
             statusLabel.Text = "Stopping benchmark...";
             startButton.Enabled = false;
             return;
         }
 
-        selectedSeconds = durationBox.SelectedIndex switch
+        infiniteRun = durationBox.SelectedIndex == 3;
+        selectedSeconds = infiniteRun ? 0 : durationBox.SelectedIndex switch
         {
             0 => 5,
             2 => 30,
             _ => 10
         };
+        stoppedByUser = false;
         var previousBenchmarkType = latestBenchmarkType;
         var hadLatestResult = latestResult.HasValue;
         var useGpu = benchmarkModeBox.SelectedIndex == 1;
@@ -409,14 +414,17 @@ internal sealed class MainForm : Form
         runStopwatch = Stopwatch.StartNew();
         displayTimer.Start();
         startButton.Text = "Stop benchmark";
-        statusLabel.Text = $"Running {latestBenchmarkType.ToUpperInvariant()} benchmark for {selectedSeconds} seconds...";
+        statusLabel.Text = infiniteRun
+            ? $"Running {latestBenchmarkType.ToUpperInvariant()} benchmark until you stop it..."
+            : $"Running {latestBenchmarkType.ToUpperInvariant()} benchmark for {selectedSeconds} seconds...";
         SetInputsEnabled(false);
+        progressBar.Style = infiniteRun ? ProgressBarStyle.Marquee : ProgressBarStyle.Continuous;
 
         var progress = new Progress<BenchmarkProgress>(UpdateProgress);
 
         try
         {
-            var duration = TimeSpan.FromSeconds(selectedSeconds);
+            var duration = infiniteRun ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(selectedSeconds);
             var result = useGpu
                 ? await GpuHashRateBenchmark.RunAsync(duration, progress, runCancellation.Token)
                 : await HashRateBenchmark.RunAsync(
@@ -425,8 +433,8 @@ internal sealed class MainForm : Form
                     progress,
                     runCancellation.Token);
             UpdateProgress(new BenchmarkProgress(result.Hashes, result.Elapsed));
-            statusLabel.Text = runCancellation.IsCancellationRequested
-                ? "Benchmark stopped."
+            statusLabel.Text = stoppedByUser
+                ? "Benchmark stopped and saved."
                 : "Benchmark complete.";
             SaveHistory(new BenchmarkHistoryEntry(
                 DateTimeOffset.Now,
@@ -437,10 +445,15 @@ internal sealed class MainForm : Form
                 BenchmarkType = latestBenchmarkType,
                 Backend = latestBackend
             });
-            if (!runCancellation.IsCancellationRequested)
+            if (!stoppedByUser || infiniteRun)
             {
                 latestResult = result;
-                submitLeaderboardButton.Enabled = true;
+                var elapsedSeconds = result.Elapsed.TotalSeconds;
+                submitLeaderboardButton.Enabled = elapsedSeconds is >= 1 and <= 604_800;
+                if (!submitLeaderboardButton.Enabled)
+                {
+                    statusLabel.Text = "Run saved locally; public submissions support runs from 1 second to 7 days.";
+                }
             }
         }
         catch (Exception exception)
@@ -457,7 +470,8 @@ internal sealed class MainForm : Form
             SetInputsEnabled(true);
             startButton.Enabled = true;
             startButton.Text = "Start benchmark";
-            progressBar.Value = 100;
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.Value = latestResult.HasValue ? 100 : 0;
         }
     }
 
@@ -468,10 +482,13 @@ internal sealed class MainForm : Form
         rateLabel.Text = FormatRate(rate);
         hashesLabel.Text = progress.Hashes.ToString("N0");
         elapsedLabel.Text = $"{progress.Elapsed.TotalSeconds:F1} s";
-        progressBar.Value = Math.Clamp(
-            (int)(progress.Elapsed.TotalSeconds / selectedSeconds * 100),
-            0,
-            100);
+        if (!infiniteRun)
+        {
+            progressBar.Value = Math.Clamp(
+                (int)(progress.Elapsed.TotalSeconds / selectedSeconds * 100),
+                0,
+                100);
+        }
     }
 
     private void UpdateElapsed()
@@ -487,10 +504,13 @@ internal sealed class MainForm : Form
             rateLabel.Text = FormatRate(latestHashes / runStopwatch.Elapsed.TotalSeconds);
         }
 
-        progressBar.Value = Math.Clamp(
-            (int)(runStopwatch.Elapsed.TotalSeconds / selectedSeconds * 100),
-            0,
-            100);
+        if (!infiniteRun)
+        {
+            progressBar.Value = Math.Clamp(
+                (int)(runStopwatch.Elapsed.TotalSeconds / selectedSeconds * 100),
+                0,
+                100);
+        }
     }
 
     private void SetInputsEnabled(bool enabled)
@@ -504,7 +524,7 @@ internal sealed class MainForm : Form
     {
         var gpuSelected = benchmarkModeBox.SelectedIndex == 1;
         threadCountBox.Enabled = !gpuSelected && runCancellation is null;
-        threadCountCaption.Text = gpuSelected ? "GPU DISPATCH" : "CPU THREADS";
+        threadCountCaption.Text = gpuSelected ? "GPU DISPATCH" : "CPU LOGICAL THREADS";
         if (latestResult.HasValue)
         {
             statusLabel.Text = $"Device details describe the latest {latestBenchmarkType.ToUpperInvariant()} run.";

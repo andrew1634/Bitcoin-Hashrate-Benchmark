@@ -19,7 +19,7 @@ internal static class HashRateBenchmark
         IProgress<BenchmarkProgress> progress,
         CancellationToken cancellationToken)
     {
-        if (duration <= TimeSpan.Zero)
+        if (duration != Timeout.InfiniteTimeSpan && duration <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(duration));
         }
@@ -30,7 +30,10 @@ internal static class HashRateBenchmark
         }
 
         using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        runCancellation.CancelAfter(duration);
+        if (duration != Timeout.InfiniteTimeSpan)
+        {
+            runCancellation.CancelAfter(duration);
+        }
 
         long totalHashes = 0;
         var stopwatch = Stopwatch.StartNew();

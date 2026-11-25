@@ -53,7 +53,7 @@ internal static partial class GpuHashRateBenchmark
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        if (duration <= TimeSpan.Zero)
+        if (duration != Timeout.InfiniteTimeSpan && duration <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(duration));
         }
@@ -64,7 +64,10 @@ internal static partial class GpuHashRateBenchmark
         }
 
         using var runCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        runCancellation.CancelAfter(duration);
+        if (duration != Timeout.InfiniteTimeSpan)
+        {
+            runCancellation.CancelAfter(duration);
+        }
 
         return await Task.Run(
             () => RunBatches(device!, runCancellation.Token, progress),

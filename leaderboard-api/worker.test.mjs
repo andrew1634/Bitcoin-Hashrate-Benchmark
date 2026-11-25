@@ -103,6 +103,7 @@ test("rejects malformed or out-of-range submissions", async () => {
     { ...validSubmission, architecture: "riscv" },
     { ...validSubmission, hashes: -1 },
     { ...validSubmission, elapsedSeconds: 0.5 },
+    { ...validSubmission, elapsedSeconds: 604_800.1 },
     { ...validSubmission, threadCount: 257 },
     { ...validSubmission, benchmarkType: "gpu", backend: "browser-webcrypto" },
     { ...validSubmission, benchmarkType: "asic", backend: "direct3d12" }
@@ -114,6 +115,21 @@ test("rejects malformed or out-of-range submissions", async () => {
     assert.equal(response.status, 400);
   }
   assert.equal(db.entries.length, 0);
+});
+
+test("accepts a user-stopped run up to seven days long", async () => {
+  const db = new TestDatabase();
+  const response = await worker.fetch(
+    makeRequest("/api/submissions", "POST", { ...validSubmission, elapsedSeconds: 604_800 }),
+    environment(db)
+  );
+  assert.equal(response.status, 201);
+
+  const rejected = await worker.fetch(
+    makeRequest("/api/submissions", "POST", { ...validSubmission, elapsedSeconds: 604_801 }),
+    environment(db)
+  );
+  assert.equal(rejected.status, 400);
 });
 
 test("stores accepted entries as unverified and timestamps them on the server", async () => {

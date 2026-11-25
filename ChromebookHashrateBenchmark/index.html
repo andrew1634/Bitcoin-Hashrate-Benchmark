@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark v1.0.5 UNSTABLE</title>
+  <title>Browser Hashrate Benchmark v1.0.6 UNSTABLE</title>
   <style>
     :root {
       color-scheme: dark;
@@ -345,10 +345,10 @@
     </header>
 
     <aside class="unstable-notice" role="note" aria-label="Unstable beta warning">
-      <strong>UNSTABLE BETA · v1.0.5</strong>
+      <strong>UNSTABLE BETA · v1.0.6</strong>
       <p>
-        GPU benchmarking is experimental and may fail or produce inaccurate results.
-        It can heat your device; stop if it gets hot or sluggish. Results are unverified.
+        This browser version benchmarks the CPU only. Long runs can create sustained
+        load and heat; stop if the device gets hot or sluggish. Results are unverified.
       </p>
     </aside>
 
@@ -367,22 +367,16 @@
       </div>
       <div class="settings">
         <div>
-          <label for="benchmark-mode">BENCHMARK DEVICE</label>
-          <select id="benchmark-mode">
-            <option value="cpu">CPU</option>
-            <option value="gpu">GPU (auto-detect)</option>
-          </select>
-        </div>
-        <div>
           <label for="duration">TEST DURATION</label>
           <select id="duration">
             <option value="10">10 seconds</option>
             <option value="30">30 seconds</option>
             <option value="60">60 seconds</option>
+            <option value="infinite">Infinite (stop manually)</option>
           </select>
         </div>
         <div>
-          <label for="threads">BROWSER WORKERS</label>
+          <label for="threads">LOGICAL CPU WORKERS</label>
           <select id="threads"></select>
         </div>
       </div>
@@ -480,7 +474,7 @@
       Browser and Windows app results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
-    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.5.</p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.6.</p>
   </main>
 
   <script>
@@ -542,121 +536,7 @@
       };
     `;
 
-    const gpuShaderConstants = `
-      const K: array<u32, 64> = array<u32, 64>(
-        0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
-        0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
-        0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
-        0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
-        0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
-        0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
-        0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
-        0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u
-      );
-      fn rotateRight(value: u32, amount: u32) -> u32 {
-        return (value >> amount) | (value << (32u - amount));
-      }
-      fn compress(input: array<u32, 8>, block: array<u32, 16>) -> array<u32, 8> {
-        var words: array<u32, 64>;
-        for (var index = 0u; index < 16u; index = index + 1u) { words[index] = block[index]; }
-        for (var index = 16u; index < 64u; index = index + 1u) {
-          let x = words[index - 15u];
-          let y = words[index - 2u];
-          let s0 = rotateRight(x, 7u) ^ rotateRight(x, 18u) ^ (x >> 3u);
-          let s1 = rotateRight(y, 17u) ^ rotateRight(y, 19u) ^ (y >> 10u);
-          words[index] = words[index - 16u] + s0 + words[index - 7u] + s1;
-        }
-        var a = input[0]; var b = input[1]; var c = input[2]; var d = input[3];
-        var e = input[4]; var f = input[5]; var g = input[6]; var h = input[7];
-        for (var index = 0u; index < 64u; index = index + 1u) {
-          let s1 = rotateRight(e, 6u) ^ rotateRight(e, 11u) ^ rotateRight(e, 25u);
-          let choice = (e & f) ^ ((~e) & g);
-          let temp1 = h + s1 + choice + K[index] + words[index];
-          let s0 = rotateRight(a, 2u) ^ rotateRight(a, 13u) ^ rotateRight(a, 22u);
-          let majority = (a & b) ^ (a & c) ^ (b & c);
-          let temp2 = s0 + majority;
-          h = g; g = f; f = e; e = d + temp1;
-          d = c; c = b; b = a; a = temp1 + temp2;
-        }
-        return array<u32, 8>(
-          input[0] + a, input[1] + b, input[2] + c, input[3] + d,
-          input[4] + e, input[5] + f, input[6] + g, input[7] + h
-        );
-      }
-      struct Params { base: u32, padding0: u32, padding1: u32, padding2: u32 }
-      @group(0) @binding(0) var<uniform> params: Params;
-      @group(0) @binding(1) var<storage, read_write> outputHashes: array<u32>;
-      @compute @workgroup_size(64)
-      fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-        if (id.x >= arrayLength(&outputHashes)) { return; }
-        let nonce = params.base + id.x;
-        let swappedNonce = ((nonce & 0x000000ffu) << 24u)
-          | ((nonce & 0x0000ff00u) << 8u)
-          | ((nonce & 0x00ff0000u) >> 8u)
-          | ((nonce & 0xff000000u) >> 24u);
-        let initial = array<u32, 8>(
-          0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
-          0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u
-        );
-        let firstBlock = array<u32, 16>(0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
-        var firstState = compress(initial, firstBlock);
-        let secondBlock = array<u32, 16>(
-          0u, 0u, 0u, swappedNonce, 0x80000000u, 0u, 0u, 0u,
-          0u, 0u, 0u, 0u, 0u, 0u, 0u, 640u
-        );
-        firstState = compress(firstState, secondBlock);
-        let digestBlock = array<u32, 16>(
-          firstState[0], firstState[1], firstState[2], firstState[3],
-          firstState[4], firstState[5], firstState[6], firstState[7],
-          0x80000000u, 0u, 0u, 0u, 0u, 0u, 0u, 256u
-        );
-        let secondState = compress(initial, digestBlock);
-        outputHashes[id.x] = secondState[0];
-      }
-    `;
-
-    const webGpuShader = `
-      ${gpuShaderConstants}
-    `;
-
-    const glslShaHelpers = `
-      const uint K[64] = uint[64](
-        0x428a2f98u,0x71374491u,0xb5c0fbcfu,0xe9b5dba5u,0x3956c25bu,0x59f111f1u,0x923f82a4u,0xab1c5ed5u,
-        0xd807aa98u,0x12835b01u,0x243185beu,0x550c7dc3u,0x72be5d74u,0x80deb1feu,0x9bdc06a7u,0xc19bf174u,
-        0xe49b69c1u,0xefbe4786u,0x0fc19dc6u,0x240ca1ccu,0x2de92c6fu,0x4a7484aau,0x5cb0a9dcu,0x76f988dau,
-        0x983e5152u,0xa831c66du,0xb00327c8u,0xbf597fc7u,0xc6e00bf3u,0xd5a79147u,0x06ca6351u,0x14292967u,
-        0x27b70a85u,0x2e1b2138u,0x4d2c6dfcu,0x53380d13u,0x650a7354u,0x766a0abbu,0x81c2c92eu,0x92722c85u,
-        0xa2bfe8a1u,0xa81a664bu,0xc24b8b70u,0xc76c51a3u,0xd192e819u,0xd6990624u,0xf40e3585u,0x106aa070u,
-        0x19a4c116u,0x1e376c08u,0x2748774cu,0x34b0bcb5u,0x391c0cb3u,0x4ed8aa4au,0x5b9cca4fu,0x682e6ff3u,
-        0x748f82eeu,0x78a5636fu,0x84c87814u,0x8cc70208u,0x90befffau,0xa4506cebu,0xbef9a3f7u,0xc67178f2u
-      );
-      uint rotateRight(uint value, uint amount) { return (value >> amount) | (value << (32u - amount)); }
-      void compress(inout uint H[8], uint block[16]) {
-        uint words[64];
-        for (int i = 0; i < 16; i++) words[i] = block[i];
-        for (int i = 16; i < 64; i++) {
-          uint x = words[i - 15], y = words[i - 2];
-          uint s0 = rotateRight(x, 7u) ^ rotateRight(x, 18u) ^ (x >> 3u);
-          uint s1 = rotateRight(y, 17u) ^ rotateRight(y, 19u) ^ (y >> 10u);
-          words[i] = words[i - 16] + s0 + words[i - 7] + s1;
-        }
-        uint a=H[0], b=H[1], c=H[2], d=H[3], e=H[4], f=H[5], g=H[6], h=H[7];
-        for (int i = 0; i < 64; i++) {
-          uint s1 = rotateRight(e, 6u) ^ rotateRight(e, 11u) ^ rotateRight(e, 25u);
-          uint choice = (e & f) ^ ((~e) & g);
-          uint temp1 = h + s1 + choice + K[i] + words[i];
-          uint s0 = rotateRight(a, 2u) ^ rotateRight(a, 13u) ^ rotateRight(a, 22u);
-          uint majority = (a & b) ^ (a & c) ^ (b & c);
-          uint temp2 = s0 + majority;
-          h=g; g=f; f=e; e=d+temp1; d=c; c=b; b=a; a=temp1+temp2;
-        }
-        H[0]+=a; H[1]+=b; H[2]+=c; H[3]+=d;
-        H[4]+=e; H[5]+=f; H[6]+=g; H[7]+=h;
-      }
-    `;
-
     const durationSelect = document.querySelector("#duration");
-    const benchmarkModeSelect = document.querySelector("#benchmark-mode");
     const threadSelect = document.querySelector("#threads");
     const startButton = document.querySelector("#start");
     const status = document.querySelector("#status");
@@ -677,7 +557,7 @@
     const hardwareStatus = document.querySelector("#hardware-status");
     const refreshLeaderboardButton = document.querySelector("#refresh-leaderboard");
     const submitResultButton = document.querySelector("#submit-result");
-    const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 16));
+    const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 2, 64));
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
     const historyLimit = 10;
     const apiBaseUrl = location.protocol === "file:"
@@ -697,8 +577,6 @@
     let doneWorkers = 0;
     let workerHashes = [];
     let displayTimer;
-    let gpuStopRequested = false;
-    let activeBackend = "browser-webcrypto";
 
     function formatRate(value) {
       if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} MH/s`;
@@ -748,255 +626,6 @@
       if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} MH/s`;
       if (value >= 1_000) return `${(value / 1_000).toFixed(2)} kH/s`;
       return `${value.toFixed(0)} H/s`;
-    }
-
-    async function runGpuBenchmark(durationMs, reportProgress, shouldStop) {
-      let webGpuError = "WebGPU is unavailable or requires a secure context.";
-      if (globalThis.isSecureContext && navigator.gpu) {
-        try {
-          return await runWebGpuBenchmark(durationMs, reportProgress, shouldStop);
-        } catch (error) {
-          webGpuError = error instanceof Error ? error.message : String(error);
-        }
-      }
-
-      try {
-        return await runWebGlBenchmark(durationMs, reportProgress, shouldStop);
-      } catch (error) {
-        const webGlError = error instanceof Error ? error.message : String(error);
-        throw new Error(`GPU benchmark unavailable. WebGPU: ${webGpuError}. WebGL2: ${webGlError}`);
-      }
-    }
-
-    async function runWebGpuBenchmark(durationMs, reportProgress, shouldStop) {
-      const adapter = await navigator.gpu.requestAdapter();
-      if (!adapter) throw new Error("No WebGPU adapter was found.");
-      const device = await adapter.requestDevice();
-      const batchSize = 16_384;
-      const byteSize = batchSize * Uint32Array.BYTES_PER_ELEMENT;
-      const outputBuffer = device.createBuffer({
-        size: byteSize,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
-      });
-      const readbackBuffer = device.createBuffer({
-        size: byteSize,
-        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-      });
-      const paramsBuffer = device.createBuffer({
-        size: 16,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-      });
-
-      try {
-        const shaderModule = device.createShaderModule({ code: webGpuShader });
-        const compilation = await shaderModule.getCompilationInfo();
-        const shaderError = compilation.messages.find((message) => message.type === "error");
-        if (shaderError) throw new Error(`WebGPU shader error: ${shaderError.message}`);
-
-        const pipeline = device.createComputePipeline({
-          layout: "auto",
-          compute: { module: shaderModule, entryPoint: "main" }
-        });
-        const bindGroup = device.createBindGroup({
-          layout: pipeline.getBindGroupLayout(0),
-          entries: [
-            { binding: 0, resource: { buffer: paramsBuffer } },
-            { binding: 1, resource: { buffer: outputBuffer } }
-          ]
-        });
-        let activeElapsedMs = 0;
-        let totalHashes = 0;
-        let nonceBase = 0;
-
-        while (!shouldStop() && activeElapsedMs < durationMs) {
-          const batchStartedAt = performance.now();
-          device.queue.writeBuffer(paramsBuffer, 0, new Uint32Array([nonceBase, 0, 0, 0]));
-          const encoder = device.createCommandEncoder();
-          const pass = encoder.beginComputePass();
-          pass.setPipeline(pipeline);
-          pass.setBindGroup(0, bindGroup);
-          pass.dispatchWorkgroups(batchSize / 64);
-          pass.end();
-          encoder.copyBufferToBuffer(outputBuffer, 0, readbackBuffer, 0, byteSize);
-          device.queue.submit([encoder.finish()]);
-          await readbackBuffer.mapAsync(GPUMapMode.READ);
-          readbackBuffer.unmap();
-
-          totalHashes += batchSize;
-          nonceBase = (nonceBase + batchSize) >>> 0;
-          activeElapsedMs += performance.now() - batchStartedAt;
-          reportProgress(totalHashes, activeElapsedMs);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-
-        const info = adapter.info;
-        const deviceName = info?.description || info?.device || "Unreported GPU";
-        return {
-          hashes: totalHashes,
-          elapsedMs: activeElapsedMs,
-          backend: "webgpu",
-          deviceName
-        };
-      } finally {
-        outputBuffer.destroy();
-        readbackBuffer.destroy();
-        paramsBuffer.destroy();
-        device.destroy();
-      }
-    }
-
-    async function runWebGlBenchmark(durationMs, reportProgress, shouldStop) {
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl2", {
-        alpha: false,
-        antialias: false,
-        depth: false,
-        preserveDrawingBuffer: false
-      });
-      if (!gl) throw new Error("This browser does not provide WebGL2.");
-
-      const compile = (type, source) => {
-        const shader = gl.createShader(type);
-        if (!shader) throw new Error("Could not create a WebGL2 shader.");
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          const message = gl.getShaderInfoLog(shader) || "Unknown shader compilation error.";
-          gl.deleteShader(shader);
-          throw new Error(message);
-        }
-        return shader;
-      };
-
-      const vertexShader = compile(gl.VERTEX_SHADER, `#version 300 es
-        void main() {
-          vec2 positions[3] = vec2[3](vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0));
-          gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
-        }
-      `);
-      const fragmentShader = compile(gl.FRAGMENT_SHADER, `#version 300 es
-        precision highp float;
-        precision highp int;
-        ${glslShaHelpers}
-        uniform uint uBaseNonce;
-        uniform uint uWidth;
-        layout(location = 0) out uvec4 outHash;
-        void main() {
-          uint index = uint(gl_FragCoord.y) * uWidth + uint(gl_FragCoord.x);
-          uint nonce = uBaseNonce + index;
-          uint swappedNonce = ((nonce & 0x000000ffu) << 24u)
-            | ((nonce & 0x0000ff00u) << 8u)
-            | ((nonce & 0x00ff0000u) >> 8u)
-            | ((nonce & 0xff000000u) >> 24u);
-          uint initial[8] = uint[8](
-            0x6a09e667u,0xbb67ae85u,0x3c6ef372u,0xa54ff53au,
-            0x510e527fu,0x9b05688cu,0x1f83d9abu,0x5be0cd19u
-          );
-          uint firstState[8] = uint[8](
-            0x6a09e667u,0xbb67ae85u,0x3c6ef372u,0xa54ff53au,
-            0x510e527fu,0x9b05688cu,0x1f83d9abu,0x5be0cd19u
-          );
-          uint firstBlock[16] = uint[16](0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u);
-          compress(firstState, firstBlock);
-          uint secondBlock[16] = uint[16](
-            0u,0u,0u,swappedNonce,0x80000000u,0u,0u,0u,
-            0u,0u,0u,0u,0u,0u,0u,640u
-          );
-          compress(firstState, secondBlock);
-          uint secondState[8] = uint[8](
-            0x6a09e667u,0xbb67ae85u,0x3c6ef372u,0xa54ff53au,
-            0x510e527fu,0x9b05688cu,0x1f83d9abu,0x5be0cd19u
-          );
-          uint digestBlock[16] = uint[16](
-            firstState[0],firstState[1],firstState[2],firstState[3],
-            firstState[4],firstState[5],firstState[6],firstState[7],
-            0x80000000u,0u,0u,0u,0u,0u,0u,256u
-          );
-          compress(secondState, digestBlock);
-          outHash = uvec4(
-            secondState[0] & 255u,
-            (secondState[0] >> 8u) & 255u,
-            (secondState[0] >> 16u) & 255u,
-            (secondState[0] >> 24u) & 255u
-          );
-        }
-      `);
-
-      const program = gl.createProgram();
-      if (!program) throw new Error("Could not create a WebGL2 program.");
-      gl.attachShader(program, vertexShader);
-      gl.attachShader(program, fragmentShader);
-      gl.linkProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        const message = gl.getProgramInfoLog(program) || "Unknown shader linking error.";
-        gl.deleteProgram(program);
-        throw new Error(message);
-      }
-
-      const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-      const side = Math.min(128, maxTextureSize);
-      canvas.width = side;
-      canvas.height = side;
-      const texture = gl.createTexture();
-      const framebuffer = gl.createFramebuffer();
-      if (!texture || !framebuffer) throw new Error("Could not allocate WebGL2 output resources.");
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, side, side, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, null);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-        throw new Error("This GPU cannot create the required WebGL2 output buffer.");
-      }
-
-      gl.useProgram(program);
-      gl.viewport(0, 0, side, side);
-      gl.disable(gl.BLEND);
-      gl.disable(gl.DITHER);
-      const baseLocation = gl.getUniformLocation(program, "uBaseNonce");
-      const widthLocation = gl.getUniformLocation(program, "uWidth");
-      gl.uniform1ui(widthLocation, side);
-      const results = new Uint8Array(side * side * 4);
-      const batchSize = side * side;
-      let activeElapsedMs = 0;
-      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-      const deviceName = debugInfo
-        ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-        : "Unreported GPU";
-      let totalHashes = 0;
-      let nonceBase = 0;
-
-      try {
-        while (!shouldStop() && activeElapsedMs < durationMs) {
-          const batchStartedAt = performance.now();
-          gl.uniform1ui(baseLocation, nonceBase);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-          gl.readPixels(0, 0, side, side, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, results);
-          const glError = gl.getError();
-          if (glError !== gl.NO_ERROR) throw new Error(`WebGL2 readback failed (error ${glError}).`);
-          totalHashes += batchSize;
-          nonceBase = (nonceBase + batchSize) >>> 0;
-          activeElapsedMs += performance.now() - batchStartedAt;
-          reportProgress(totalHashes, activeElapsedMs);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
-      } finally {
-        gl.deleteProgram(program);
-        gl.deleteTexture(texture);
-        gl.deleteFramebuffer(framebuffer);
-        const loseContext = gl.getExtension("WEBGL_lose_context");
-        loseContext?.loseContext();
-      }
-
-      return {
-        hashes: totalHashes,
-        elapsedMs: activeElapsedMs,
-        backend: "webgl2",
-        deviceName
-      };
     }
 
     async function refreshLeaderboard() {
@@ -1174,10 +803,12 @@
       hashes.textContent = totalHashes.toLocaleString();
       elapsed.textContent = `${seconds.toFixed(1)} s`;
       rate.textContent = formatRate(seconds > 0 ? totalHashes / seconds : 0);
-      perThreadRate.textContent = benchmarkModeSelect.value === "gpu"
-        ? "GPU mode"
-        : formatPerThreadRate(hashesPerThreadPerSecond);
-      progress.value = Math.min(100, seconds / Number(durationSelect.value) * 100);
+      perThreadRate.textContent = formatPerThreadRate(hashesPerThreadPerSecond);
+      if (durationSelect.value === "infinite") {
+        progress.removeAttribute("value");
+      } else {
+        progress.value = Math.min(100, seconds / Number(durationSelect.value) * 100);
+      }
     }
 
     function stopWorkers() {
@@ -1190,7 +821,6 @@
     function stopBenchmark() {
       if (!running) return;
       stoppedByUser = true;
-      gpuStopRequested = true;
       status.textContent = "Stopping benchmark...";
       for (const worker of workers) worker.postMessage({ type: "stop" });
     }
@@ -1201,19 +831,14 @@
         return;
       }
 
-      const benchmarkType = benchmarkModeSelect.value;
-      if (latestRun && latestRun.benchmarkType !== benchmarkType) {
-        leaderboardModel.value = benchmarkType === "gpu" ? "Unreported GPU" : "Unreported";
-        hardwareStatus.textContent = `Edit the device details for the new ${benchmarkType.toUpperCase()} run before submitting.`;
-      }
-      if (benchmarkType === "cpu" && (!globalThis.crypto?.subtle || typeof Worker === "undefined")) {
+      const infiniteRun = durationSelect.value === "infinite";
+      if (!globalThis.crypto?.subtle || typeof Worker === "undefined") {
         status.textContent = "This browser does not support the required Web Crypto or Worker APIs.";
         return;
       }
 
       running = true;
       stoppedByUser = false;
-      gpuStopRequested = false;
       latestRun = null;
       submitResultButton.disabled = true;
       doneWorkers = 0;
@@ -1223,122 +848,95 @@
       perThreadRate.textContent = "0 H/s/thread";
       hashes.textContent = "0";
       elapsed.textContent = "0.0 s";
-      progress.value = 0;
+      if (infiniteRun) {
+        progress.removeAttribute("value");
+      } else {
+        progress.value = 0;
+      }
       startButton.textContent = "Stop benchmark";
       startButton.classList.add("is-running");
       durationSelect.disabled = true;
-      benchmarkModeSelect.disabled = true;
-      threadSelect.disabled = benchmarkType === "gpu";
-      status.textContent = benchmarkType === "gpu"
-        ? "Starting GPU benchmark; detecting WebGPU or WebGL2..."
-        : `Running with ${threadSelect.value} browser worker(s)...`;
-
-      const workerUrl = benchmarkType === "cpu"
-        ? URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }))
-        : null;
-      const count = benchmarkType === "gpu" ? 1 : Number(threadSelect.value);
-      const durationMs = Number(durationSelect.value) * 1000;
+      threadSelect.disabled = true;
+      const count = Number(threadSelect.value);
+      status.textContent = infiniteRun
+        ? `Running with ${count} logical CPU worker(s); stop when ready.`
+        : `Running with ${count} logical CPU worker(s)...`;
+      const workerUrl = URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }));
+      const durationMs = infiniteRun ? Number.POSITIVE_INFINITY : Number(durationSelect.value) * 1000;
       startedAt = performance.now();
-      displayTimer = benchmarkType === "cpu"
-        ? setInterval(() => updateDisplay(performance.now() - startedAt), 250)
-        : null;
+      displayTimer = setInterval(() => updateDisplay(performance.now() - startedAt), 250);
       let completedElapsedMs = 0;
+      let completedSuccessfully = false;
 
       try {
-        if (benchmarkType === "gpu") {
-          const result = await runGpuBenchmark(
-            durationMs,
-            (hashCount, elapsedMs) => {
-              workerHashes[0] = hashCount;
-              completedElapsedMs = elapsedMs;
-              updateDisplay(elapsedMs);
-            },
-            () => gpuStopRequested
-          );
-          activeBackend = result.backend;
-          leaderboardModel.value = result.deviceName.slice(0, 100);
-          hardwareStatus.textContent = `GPU backend: ${result.backend}. Review or edit the reported device name before submitting.`;
-          completedElapsedMs = result.elapsedMs;
-          workerHashes[0] = result.hashes;
-          updateDisplay(result.elapsedMs);
-        } else {
-          activeBackend = "browser-webcrypto";
-          await new Promise((resolve, reject) => {
-            try {
-              workers = [];
-              for (let id = 0; id < count; id++) {
-                const worker = new Worker(workerUrl);
-                worker.onmessage = ({ data }) => {
-                  if (data.type === "error") {
-                    reject(new Error(data.message));
-                    return;
-                  }
+        await new Promise((resolve, reject) => {
+          try {
+            workers = [];
+            for (let id = 0; id < count; id++) {
+              const worker = new Worker(workerUrl);
+              worker.onmessage = ({ data }) => {
+                if (data.type === "error") {
+                  reject(new Error(data.message));
+                  return;
+                }
 
-                  workerHashes[data.id] = data.hashes;
-                  updateDisplay(performance.now() - startedAt);
+                workerHashes[data.id] = data.hashes;
+                updateDisplay(performance.now() - startedAt);
 
-                  if (data.type === "done" && ++doneWorkers === count) resolve();
-                };
-                worker.onerror = (event) => reject(new Error(event.message || "A browser worker failed."));
-                workers.push(worker);
-              }
-            } catch (error) {
-              reject(error);
-              return;
+                if (data.type === "done" && ++doneWorkers === count) resolve();
+              };
+              worker.onerror = (event) => reject(new Error(event.message || "A browser worker failed."));
+              workers.push(worker);
             }
+          } catch (error) {
+            reject(error);
+            return;
+          }
 
-            for (let id = 0; id < workers.length; id++) {
-              workers[id].postMessage({ type: "start", id, durationMs });
-            }
-          });
-          completedElapsedMs = performance.now() - startedAt;
-          updateDisplay(completedElapsedMs);
-        }
+          for (let id = 0; id < workers.length; id++) {
+            workers[id].postMessage({ type: "start", id, durationMs });
+          }
+        });
+        completedElapsedMs = performance.now() - startedAt;
+        updateDisplay(completedElapsedMs);
 
-        status.textContent = stoppedByUser ? "Benchmark stopped." : "Benchmark complete.";
+        status.textContent = stoppedByUser ? "Benchmark stopped and saved." : "Benchmark complete.";
         const completedRun = {
           completedAt: new Date().toISOString(),
           threadCount: count,
           hashes: totalHashes,
           elapsedSeconds: completedElapsedMs / 1000,
-          benchmarkType,
-          backend: activeBackend
+          benchmarkType: "cpu",
+          backend: "browser-webcrypto"
         };
         if (completedRun.elapsedSeconds > 0) saveHistory(completedRun);
-        latestRun = stoppedByUser ? null : completedRun;
+        const runCanBeSubmitted = completedRun.elapsedSeconds >= 1 && completedRun.elapsedSeconds <= 604_800;
+        latestRun = (!stoppedByUser || infiniteRun) && runCanBeSubmitted ? completedRun : null;
         submitResultButton.disabled = !latestRun;
+        if ((!stoppedByUser || infiniteRun) && !runCanBeSubmitted) {
+          status.textContent = "Run saved locally; public submissions support runs from 1 second to 7 days.";
+        }
+        completedSuccessfully = true;
       } catch (error) {
         status.textContent = `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`;
       } finally {
         clearInterval(displayTimer);
-        if (workerUrl) URL.revokeObjectURL(workerUrl);
+        URL.revokeObjectURL(workerUrl);
         stopWorkers();
         running = false;
         startButton.textContent = "Start benchmark";
         startButton.classList.remove("is-running");
         durationSelect.disabled = false;
-        benchmarkModeSelect.disabled = false;
-        threadSelect.disabled = benchmarkModeSelect.value === "gpu";
-        if (progress.value >= 99.9) progress.value = 100;
+        threadSelect.disabled = false;
+        if (infiniteRun) {
+          progress.value = completedSuccessfully ? 100 : 0;
+        } else if (progress.value >= 99.9) {
+          progress.value = 100;
+        }
       }
     }
 
     startButton.addEventListener("click", startBenchmark);
-    benchmarkModeSelect.addEventListener("change", () => {
-      const gpuSelected = benchmarkModeSelect.value === "gpu";
-      threadSelect.disabled = gpuSelected;
-      perThreadRate.textContent = gpuSelected ? "GPU mode" : "0 H/s/thread";
-    if (latestRun) {
-      hardwareStatus.textContent = `Device details are for the latest ${latestRun.benchmarkType.toUpperCase()} run.`;
-    } else if (gpuSelected) {
-        leaderboardModel.value = "Unreported GPU";
-        hardwareStatus.textContent = "GPU model detection is best-effort; review or edit the device name before submitting.";
-      status.textContent = "GPU mode may use more power and heat; stop if the device gets too warm or sluggish.";
-      } else {
-      status.textContent = "Ready when you are.";
-        detectDeviceDetails();
-      }
-    });
     clearHistoryButton.addEventListener("click", clearHistory);
     refreshLeaderboardButton.addEventListener("click", refreshLeaderboard);
     submitResultButton.addEventListener("click", submitLatestRun);

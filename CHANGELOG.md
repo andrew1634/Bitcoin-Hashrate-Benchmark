@@ -2,6 +2,19 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.6] - Unstable Beta
+
+### Added
+
+- Infinite-duration CPU and Windows GPU runs that continue until stopped manually.
+- CPU worker counts use OS/browser-reported logical processors, including Hyper-Threading where available.
+- Browser leaderboard can still display both CPU and Windows GPU results.
+
+### Changed
+
+- Removed GPU hashing from the HTML app; GPU benchmarking remains available in the Windows app.
+- Public submissions now accept stopped runs up to seven days.
+
 ## [1.0.5] - Unstable Beta
 
 ### Added

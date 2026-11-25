@@ -7,6 +7,7 @@ const backendsByType = {
 };
 const maxEntries = 100;
 const maxModelLength = 100;
+const maxElapsedSeconds = 604_800;
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
@@ -61,8 +62,8 @@ function normalizeSubmission(value) {
   if (!Number.isSafeInteger(hashes) || hashes < 1) {
     return { error: "Hashes must be a positive whole number." };
   }
-  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds < 1 || elapsedSeconds > 120) {
-    return { error: "Elapsed time must be between 1 and 120 seconds." };
+  if (!Number.isFinite(elapsedSeconds) || elapsedSeconds < 1 || elapsedSeconds > maxElapsedSeconds) {
+    return { error: `Elapsed time must be between 1 and ${maxElapsedSeconds} seconds.` };
   }
   if (!Number.isSafeInteger(threadCount) || threadCount < 1 || threadCount > 256) {
     return { error: "Thread count must be between 1 and 256." };
