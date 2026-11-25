@@ -3,7 +3,7 @@ using ComputeSharp;
 
 namespace BitcoinHashrateBenchmark;
 
-internal static class GpuHashRateBenchmark
+internal static partial class GpuHashRateBenchmark
 {
     public const string Backend = "direct3d12";
 
@@ -138,7 +138,7 @@ internal static class GpuHashRateBenchmark
             uint h6 = 0x1F83D9AB;
             uint h7 = 0x5BE0CD19;
 
-            Compress(roundConstants, ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
+            Compress(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
                 ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15,
                 ref h0, ref h1, ref h2, ref h3, ref h4, ref h5, ref h6, ref h7);
 
@@ -163,7 +163,7 @@ internal static class GpuHashRateBenchmark
             w13 = 0;
             w14 = 0;
             w15 = 640;
-            Compress(roundConstants, ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
+            Compress(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
                 ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15,
                 ref h0, ref h1, ref h2, ref h3, ref h4, ref h5, ref h6, ref h7);
 
@@ -200,7 +200,7 @@ internal static class GpuHashRateBenchmark
             w13 = 0;
             w14 = 0;
             w15 = 256;
-            Compress(roundConstants, ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
+            Compress(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7,
                 ref w8, ref w9, ref w10, ref w11, ref w12, ref w13, ref w14, ref w15,
                 ref h0, ref h1, ref h2, ref h3, ref h4, ref h5, ref h6, ref h7);
 
@@ -210,8 +210,7 @@ internal static class GpuHashRateBenchmark
             }
         }
 
-        private static void Compress(
-            ReadOnlyBuffer<uint> roundConstants,
+        private void Compress(
             ref uint w0,
             ref uint w1,
             ref uint w2,
