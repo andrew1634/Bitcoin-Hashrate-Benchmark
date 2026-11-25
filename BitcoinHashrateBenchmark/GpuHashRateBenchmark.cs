@@ -21,6 +21,8 @@ internal static partial class GpuHashRateBenchmark
         0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208, 0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2
     ];
 
+    private static readonly uint[] ShaderConstants = CreateShaderConstants();
+
     public static bool IsAvailable => TryGetDevice(out _, out _);
 
     private static bool TryGetDevice(out GraphicsDevice? device, out string errorMessage)
@@ -75,7 +77,7 @@ internal static partial class GpuHashRateBenchmark
         IProgress<BenchmarkProgress> progress)
     {
         using ReadWriteBuffer<uint> output = device.AllocateReadWriteBuffer<uint>(1);
-        using ReadOnlyBuffer<uint> constants = device.AllocateReadOnlyBuffer(RoundConstants);
+        using ReadOnlyBuffer<uint> constants = device.AllocateReadOnlyBuffer(ShaderConstants);
         var completionMarker = new uint[1];
 
         long totalHashes = 0;
@@ -143,10 +145,10 @@ internal static partial class GpuHashRateBenchmark
                 ref h0, ref h1, ref h2, ref h3, ref h4, ref h5, ref h6, ref h7);
 
             uint firstBlockWord3 =
-                ((nonce & 0x000000FF) << 24) |
-                ((nonce & 0x0000FF00) << 8) |
-                ((nonce & 0x00FF0000) >> 8) |
-                ((nonce & 0xFF000000) >> 24);
+                roundConstants[64 + (int)(nonce & 0xFF)] |
+                (roundConstants[64 + (int)((nonce >> 8) & 0xFF)] >> 8) |
+                (roundConstants[64 + (int)((nonce >> 16) & 0xFF)] >> 16) |
+                (roundConstants[64 + (int)(nonce >> 24)] >> 24);
             w0 = 0;
             w1 = 0;
             w2 = 0;
@@ -347,5 +349,17 @@ internal static partial class GpuHashRateBenchmark
         {
             return (value >> amount) | (value << (32 - amount));
         }
+    }
+
+    private static uint[] CreateShaderConstants()
+    {
+        var constants = new uint[RoundConstants.Length + 256];
+        Array.Copy(RoundConstants, constants, RoundConstants.Length);
+        for (var value = 0; value < 256; value++)
+        {
+            constants[RoundConstants.Length + value] = (uint)value << 24;
+        }
+
+        return constants;
     }
 }
