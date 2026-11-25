@@ -10,18 +10,21 @@ internal enum MemoryBenchmarkKind
 
 internal static class MemoryBenchmark
 {
-    private const int BandwidthElementCount = 8 * 1024 * 1024;
-    private const int LatencyElementCount = 16 * 1024 * 1024;
     private const int ReportInterval = 65_536;
     private static long latencySink;
 
     public static Task<BenchmarkResult> RunAsync(
         MemoryBenchmarkKind kind,
         TimeSpan duration,
+        int workingSetMiB,
         IProgress<BenchmarkProgress> progress,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(progress);
+        if (workingSetMiB is < 8 or > 256 || workingSetMiB % 8 != 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(workingSetMiB));
+        }
         if (duration != Timeout.InfiniteTimeSpan && duration <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(duration));
@@ -30,19 +33,21 @@ internal static class MemoryBenchmark
         cancellationToken.ThrowIfCancellationRequested();
         return Task.Run(
             () => kind == MemoryBenchmarkKind.Bandwidth
-                ? MeasureBandwidth(duration, progress, cancellationToken)
-                : MeasureLatency(duration, progress, cancellationToken),
+                ? MeasureBandwidth(duration, workingSetMiB, progress, cancellationToken)
+                : MeasureLatency(duration, workingSetMiB, progress, cancellationToken),
             CancellationToken.None);
     }
 
     private static BenchmarkResult MeasureBandwidth(
         TimeSpan duration,
+        int workingSetMiB,
         IProgress<BenchmarkProgress> progress,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var source = new long[BandwidthElementCount];
-        var destination = new long[BandwidthElementCount];
+        var elementCount = checked(workingSetMiB * 1024 * 1024 / sizeof(long));
+        var source = new long[elementCount];
+        var destination = new long[elementCount];
         Array.Fill(source, 0x1234_5678);
         Array.Fill(destination, 0x8765_4321);
         cancellationToken.ThrowIfCancellationRequested();
@@ -71,11 +76,13 @@ internal static class MemoryBenchmark
 
     private static BenchmarkResult MeasureLatency(
         TimeSpan duration,
+        int workingSetMiB,
         IProgress<BenchmarkProgress> progress,
         CancellationToken cancellationToken)
     {
-        var links = new int[LatencyElementCount];
-        var order = new int[LatencyElementCount];
+        var elementCount = checked(workingSetMiB * 1024 * 1024 / sizeof(int));
+        var links = new int[elementCount];
+        var order = new int[elementCount];
         for (var index = 0; index < order.Length; index++)
         {
             if ((index & 0xFFFFF) == 0)

@@ -9,6 +9,8 @@ internal sealed record AppSettings
     public decimal FontSize { get; init; } = 10;
     public int CustomDurationSeconds { get; init; } = 60;
     public int CustomThreadCount { get; init; } = Math.Clamp(Environment.ProcessorCount, 1, 256);
+    public int BandwidthWorkingSetMiB { get; init; } = 64;
+    public int LatencyWorkingSetMiB { get; init; } = 64;
     public bool CustomizationUnlocked { get; init; }
 }
 
@@ -49,12 +51,16 @@ internal sealed class AppSettingsStore
             || settings.AccentColor is not ("green" or "blue" or "purple" or "orange")
             || settings.FontSize is < 8 or > 20
             || settings.CustomDurationSeconds is < 1 or > 86_400
-            || settings.CustomThreadCount is < 1 or > 256)
+            || settings.CustomThreadCount is < 1 or > 256
+            || settings.BandwidthWorkingSetMiB is < 8 or > 256
+            || settings.LatencyWorkingSetMiB is < 8 or > 256
+            || settings.BandwidthWorkingSetMiB % 8 != 0
+            || settings.LatencyWorkingSetMiB % 8 != 0)
         {
             throw new InvalidDataException("The saved application settings contain an invalid value.");
         }
 
-        return settings;
+        return settings with { CustomizationUnlocked = false };
     }
 
     public void Save(AppSettings settings)
@@ -64,7 +70,9 @@ internal sealed class AppSettingsStore
         Directory.CreateDirectory(directory);
 
         var temporaryPath = $"{filePath}.{Guid.NewGuid():N}.tmp";
-        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings));
+        File.WriteAllText(
+            temporaryPath,
+            JsonSerializer.Serialize(settings with { CustomizationUnlocked = false }));
         File.Move(temporaryPath, filePath, overwrite: true);
     }
 }

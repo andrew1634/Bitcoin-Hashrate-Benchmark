@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Browser Hashrate Benchmark v1.0.7 UNSTABLE</title>
+  <title>Browser Hashrate Benchmark v1.0.8 UNSTABLE</title>
   <style>
     :root {
       color-scheme: dark;
@@ -447,7 +447,7 @@
     </header>
 
     <aside class="unstable-notice" role="note" aria-label="Unstable beta warning">
-      <strong>UNSTABLE BETA · v1.0.7</strong>
+      <strong>UNSTABLE BETA · v1.0.8</strong>
       <p>
         This browser version benchmarks the CPU only. Long runs can create sustained
         load and heat; stop if the device gets hot or sluggish. Results are unverified.
@@ -563,9 +563,11 @@
     <section class="card history-card" aria-labelledby="history-heading">
       <div class="section-heading">
         <h2 id="history-heading">Recent runs</h2>
+        <button id="export-history" type="button">Export CSV</button>
         <button id="clear-history" type="button">Clear history</button>
       </div>
       <ol class="history-list" id="history-list"></ol>
+      <p id="history-comparison" class="history-details">Comparison: complete another compatible run to compare scores.</p>
       <p id="history-status" role="status" aria-live="polite">Saved in this browser only.</p>
     </section>
 
@@ -622,7 +624,7 @@
       Browser and Windows app results are not directly comparable. Use only on a
       device you are allowed to test, and stop if it gets too warm or sluggish.
     </p>
-    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.7.</p>
+    <p class="note">Idea: Andrew Miller. AI coding: Copilot Fusion. UNSTABLE BETA release v1.0.8.</p>
   </main>
 
   <script>
@@ -696,6 +698,8 @@
     const progress = document.querySelector("#progress");
     const historyList = document.querySelector("#history-list");
     const historyStatus = document.querySelector("#history-status");
+    const historyComparison = document.querySelector("#history-comparison");
+    const exportHistoryButton = document.querySelector("#export-history");
     const clearHistoryButton = document.querySelector("#clear-history");
     const leaderboardModel = document.querySelector("#leaderboard-model");
     const leaderboardArchitecture = document.querySelector("#leaderboard-architecture");
@@ -718,7 +722,6 @@
     const historyKey = "bitcoin-hashrate-benchmark.history.v1";
     const settingsKey = "bitcoin-hashrate-benchmark.settings.v1";
     const historyLimit = 10;
-    const developerUnlockCode = "Onlythedeveloperknows";
     const apiBaseUrl = location.protocol === "file:"
       ? "https://bitcoin-hashrate-benchmark.azgasgiant220.workers.dev"
       : location.origin;
@@ -750,7 +753,7 @@
           || typeof parsed.customizationUnlocked !== "boolean") {
           throw new Error("Saved settings contain invalid values.");
         }
-        appSettings = parsed;
+        appSettings = { ...parsed, customizationUnlocked: false };
       } catch (error) {
         developerSettingsStatus.textContent = `Could not load preferences: ${error instanceof Error ? error.message : String(error)}`;
       }
@@ -758,7 +761,10 @@
 
     function saveSettings() {
       try {
-        globalThis.localStorage.setItem(settingsKey, JSON.stringify(appSettings));
+        globalThis.localStorage.setItem(
+          settingsKey,
+          JSON.stringify({ ...appSettings, customizationUnlocked: false })
+        );
         return true;
       } catch (error) {
         developerSettingsStatus.textContent = `Could not save preferences: ${error instanceof Error ? error.message : String(error)}`;
@@ -826,15 +832,36 @@
       return `${formatRate(value).replace("H/s", "H/s/thread")}`;
     }
 
-    function unlockCustomization() {
-      if (developerCodeInput.value !== developerUnlockCode) {
-        developerSettingsStatus.textContent = "That developer code was not accepted.";
+    async function unlockCustomization() {
+      const code = developerCodeInput.value;
+      if (!code) {
+        developerSettingsStatus.textContent = "Enter the developer code to continue.";
         return;
       }
 
-      appSettings.customizationUnlocked = true;
-      applySettings();
-      if (saveSettings()) developerSettingsStatus.textContent = "Developer customization settings unlocked.";
+      unlockDeveloperSettingsButton.disabled = true;
+      developerSettingsStatus.textContent = "Checking developer code...";
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/developer-unlock`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ code })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Request failed (${response.status}).`);
+        if (result.unlocked !== true) throw new Error("The verification response was invalid.");
+
+        appSettings.customizationUnlocked = true;
+        applySettings();
+        if (saveSettings()) {
+          developerSettingsStatus.textContent = "Developer customization settings unlocked for this session.";
+        }
+      } catch (error) {
+        developerSettingsStatus.textContent = `Could not verify developer code: ${error instanceof Error ? error.message : String(error)}`;
+      } finally {
+        developerCodeInput.value = "";
+        unlockDeveloperSettingsButton.disabled = false;
+      }
     }
 
     function saveCustomization() {
@@ -1028,6 +1055,66 @@
         historyList.append(item);
       }
       clearHistoryButton.disabled = entries.length === 0;
+      historyComparison.textContent = compareRecentRuns(entries);
+    }
+
+    function compareRecentRuns(entries) {
+      if (entries.length < 2) return "Comparison: complete another compatible run to compare scores.";
+      const latest = entries[0];
+      const previous = entries.slice(1).find((entry) =>
+        (entry.benchmarkType ?? "cpu") === (latest.benchmarkType ?? "cpu")
+        && (entry.backend ?? "browser-webcrypto") === (latest.backend ?? "browser-webcrypto")
+        && entry.threadCount === latest.threadCount);
+      if (!previous) return "Comparison: no recent run with a matching benchmark configuration.";
+
+      const latestRate = latest.hashes / latest.elapsedSeconds;
+      const previousRate = previous.hashes / previous.elapsedSeconds;
+      const change = previousRate > 0 ? (latestRate / previousRate - 1) * 100 : 0;
+      const result = previousRate > 0
+        ? `${change >= 0 ? "+" : ""}${change.toFixed(1)}% ${change >= 0 ? "faster" : "slower"}`
+        : "previous score unavailable";
+      return `Latest compatible run: ${formatRate(latestRate)} vs ${formatRate(previousRate)} (${result}; `
+        + `${new Date(previous.completedAt).toLocaleString()}).`;
+    }
+
+    function csvCell(value) {
+      const text = String(value);
+      const safeText = /^\s*[=+\-@]/.test(text) ? `'${text}` : text;
+      return `"${safeText.replaceAll('"', '""')}"`;
+    }
+
+    function exportHistory() {
+      try {
+        const entries = readHistory();
+        if (entries.length === 0) {
+          historyStatus.textContent = "There are no runs to export.";
+          return;
+        }
+        const rows = [
+          ["completedAt", "benchmarkType", "backend", "threads", "work", "workUnit", "elapsedSeconds", "score", "scoreUnit"],
+          ...entries.map((entry) => [
+            entry.completedAt,
+            entry.benchmarkType ?? "cpu",
+            entry.backend ?? "browser-webcrypto",
+            entry.threadCount,
+            entry.hashes,
+            "hashes",
+            entry.elapsedSeconds,
+            (entry.hashes / entry.elapsedSeconds).toFixed(3),
+            "hashes/second"
+          ])
+        ];
+        const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        const download = document.createElement("a");
+        download.href = url;
+        download.download = "bitcoin-hashrate-history.csv";
+        download.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        historyStatus.textContent = `Exported ${entries.length} run(s) to CSV.`;
+      } catch (error) {
+        historyStatus.textContent = `Could not export history: ${error instanceof Error ? error.message : String(error)}`;
+      }
     }
 
     function loadHistory() {
@@ -1225,6 +1312,7 @@
     customDurationInput.addEventListener("change", saveCustomization);
     customWorkersInput.addEventListener("change", saveCustomization);
     clearHistoryButton.addEventListener("click", clearHistory);
+    exportHistoryButton.addEventListener("click", exportHistory);
     refreshLeaderboardButton.addEventListener("click", refreshLeaderboard);
     submitResultButton.addEventListener("click", submitLatestRun);
     leaderboardSort.addEventListener("change", refreshLeaderboard);

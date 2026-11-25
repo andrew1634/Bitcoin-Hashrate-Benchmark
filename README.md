@@ -1,6 +1,6 @@
 # Bitcoin Hashrate Benchmark
 
-**Browser and Windows desktop UNSTABLE beta v1.0.7**
+**Browser and Windows desktop UNSTABLE beta v1.0.8**
 
 > **UNSTABLE BETA WARNING:** Long-running tests can create sustained device load and heat; stop if your device gets hot or sluggish. Windows GPU benchmarking is experimental. All public scores are unverified.
 
@@ -12,7 +12,7 @@
 
 A local benchmark for comparing how devices perform SHA-256 double hashing. The Windows desktop app and standalone browser version are for learning and performance testing only. The Windows app can be published for x64 and ARM64; the browser version can run on compatible Windows, Android, and iOS browsers, including on ARM32 and ARM64 devices.
 
-Version 1.0.7 is an unstable beta. Runs can continue until stopped manually. Use logical processors reported by the operating system or browser; Hyper-Threading is available only when the device and platform expose it. The Windows app also includes timed RAM bandwidth and memory-latency tests; these results stay local and do not appear on the CPU/GPU leaderboard.
+Version 1.0.8 is an unstable beta. Runs can continue until stopped manually. Use logical processors reported by the operating system or browser; Hyper-Threading is available only when the device and platform expose it. The Windows app also includes timed RAM bandwidth and memory-latency tests; these results stay local and do not appear on the CPU/GPU leaderboard.
 
 ## What this measures
 
@@ -20,9 +20,9 @@ Both versions repeatedly hash a synthetic 80-byte header with SHA-256 twice, sim
 
 ## Run in a browser
 
-Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The browser benchmark is CPU-only, architecture-independent, and can run on ARM32 and ARM64 devices. It offers up to 64 workers based on the browser-reported logical processor count. Choose **Infinite** to run until you press **Stop**. Choose **Light** or **Dark** under appearance to change the theme. The last 10 runs are saved locally in the browser; use **Clear history** to remove them. A page opened as a local file can use the public leaderboard too; it connects to the hosted Worker API over HTTPS. The page can still display CPU or Windows GPU leaderboard results.
+Open [ChromebookHashrateBenchmark/index.html](./ChromebookHashrateBenchmark/index.html) in a recent browser that supports Web Crypto and Web Workers, such as Chrome on Windows or Android, or Safari on iOS. The browser benchmark is CPU-only, architecture-independent, and can run on ARM32 and ARM64 devices. It offers up to 64 workers based on the browser-reported logical processor count. Choose **Infinite** to run until you press **Stop**. Choose **Light** or **Dark** under appearance to change the theme. The last 10 runs are saved locally in the browser; use **Export CSV** to download them or **Clear history** to remove them. The recent-runs view compares scores only when benchmark type, backend, and worker count match. A page opened as a local file can use the public leaderboard too; it connects to the hosted Worker API over HTTPS. The page can still display CPU or Windows GPU leaderboard results.
 
-Both apps include a developer-settings unlock. The code is checked on-device and is not payment verification; the request for payment or to ask the developer is informational. Unlocked controls include accent color, font size, custom run duration, and custom CPU worker count.
+Both apps include a developer-settings unlock. Version 1.0.8 checks the code with the HTTPS Worker endpoint; it is not saved locally or included in the shipped app. Unlocked controls include accent color, font size, custom run duration, and custom CPU worker count. The request to pay the developer or ask nicely is informational, not payment verification. Earlier releases, including 1.0.7, already exposed their client-side code and cannot be made secret retroactively.
 
 ## Optional public leaderboard
 
@@ -30,7 +30,7 @@ The public leaderboard has separate CPU and GPU rankings, sorts results by hashe
 
 The service uses Cloudflare Workers and D1. The documented Workers Free plan includes 100,000 Worker requests per day; D1 Free includes 5 million rows read and 100,000 rows written per day, with 5 GB of total storage. Exceeding daily quotas can temporarily stop leaderboard queries or submissions. Submissions are limited to five per IP per minute, but Cloudflare's rate limiter is approximate and scoped to individual locations. See the [Workers pricing and limits](https://developers.cloudflare.com/workers/platform/pricing/) and [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/).
 
-The D1 database for this deployment has been created and is configured in `wrangler.jsonc`. To deploy from your local terminal, install a current Node.js version, sign in with `npx wrangler login`, then run these commands from the repository root:
+The D1 database for this deployment has been created and is configured in `wrangler.jsonc`. Before deploying v1.0.8, add a new secret of 12–256 characters named `DEVELOPER_UNLOCK_CODE` to the Cloudflare Worker using the dashboard's **Settings → Variables and Secrets** page (or `npx wrangler secret put DEVELOPER_UNLOCK_CODE`). Choose a replacement code and do not put it in source control or chat. The unlock endpoint deliberately fails closed until the secret is configured. To deploy from your local terminal, install a current Node.js version, sign in with `npx wrangler login`, then run these commands from the repository root:
 
 ```sh
 npm install
@@ -57,7 +57,7 @@ Install the .NET 10 SDK, then from this repository run:
 dotnet run --project .\BitcoinHashrateBenchmark\BitcoinHashrateBenchmark.csproj
 ```
 
-The desktop app saves the last 10 runs to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\history.json` and preferences to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\settings.json`. Memory bandwidth uses two 64 MiB buffers. The latency test traverses a randomized 64 MiB pointer chain and uses a 64 MiB setup array. Memory results are only stored locally.
+The desktop app saves the last 10 runs to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\history.json` and preferences to `%LOCALAPPDATA%\BitcoinHashrateBenchmark\settings.json`. Use **Export CSV** in recent runs to download history, and compare the latest result with the nearest compatible prior run. The two memory tests each accept an 8–256 MiB working-set setting in 8 MiB increments; bandwidth allocates two buffers of the selected size, while latency allocates a pointer chain and setup array of that size. Memory results are only stored locally.
 
 To publish a self-contained, single-file Windows x64 app:
 

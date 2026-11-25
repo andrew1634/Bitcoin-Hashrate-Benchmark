@@ -51,11 +51,12 @@ class TestDatabase {
   }
 }
 
-function environment(db = new TestDatabase()) {
+function environment(db = new TestDatabase(), overrides = {}) {
   return {
     DB: db,
     SUBMISSION_LIMITER: { limit: async () => ({ success: true }) },
-    ASSETS: { fetch: async () => new Response("benchmark page") }
+    ASSETS: { fetch: async () => new Response("benchmark page") },
+    ...overrides
   };
 }
 
@@ -82,19 +83,90 @@ test("serves static assets for non-API requests", async () => {
 });
 
 test("allows cross-origin preflight requests from local browser files", async () => {
-  const request = new Request("https://benchmark.example/api/submissions", {
-    method: "OPTIONS",
-    headers: {
-      Origin: "null",
-      "Access-Control-Request-Method": "POST",
-      "Access-Control-Request-Headers": "content-type"
+  for (const endpoint of ["/api/submissions", "/api/developer-unlock"]) {
+    const request = new Request(`https://benchmark.example${endpoint}`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "null",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "content-type"
+      }
+    });
+    const response = await worker.fetch(request, environment());
+    assert.equal(response.status, 204);
+    assert.equal(response.headers.get("access-control-allow-origin"), "*");
+    assert.match(response.headers.get("access-control-allow-methods"), /POST/);
+    assert.match(response.headers.get("access-control-allow-headers"), /Content-Type/i);
+  }
+});
+
+test("validates developer codes without returning the configured code", async () => {
+  const secret = "replacement-secret-code";
+  const env = environment(new TestDatabase(), { DEVELOPER_UNLOCK_CODE: secret });
+  const rejected = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: "incorrect" }),
+    env
+  );
+  assert.equal(rejected.status, 401);
+
+  const accepted = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: secret }),
+    env
+  );
+  assert.equal(accepted.status, 200);
+  assert.deepEqual(await accepted.json(), { unlocked: true });
+});
+
+test("fails closed when the developer unlock secret is missing or malformed", async () => {
+  const missing = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: "replacement-secret-code" }),
+    environment()
+  );
+  assert.equal(missing.status, 503);
+
+  const shortSecret = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: "short" }),
+    environment(new TestDatabase(), { DEVELOPER_UNLOCK_CODE: "short" })
+  );
+  assert.equal(shortSecret.status, 503);
+
+  const malformed = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: ["not", "a", "string"] }),
+    environment(new TestDatabase(), { DEVELOPER_UNLOCK_CODE: "replacement-secret-code" })
+  );
+  assert.equal(malformed.status, 400);
+});
+
+test("rate limits developer code attempts independently from submissions", async () => {
+  const limiterKeys = [];
+  const env = environment(new TestDatabase(), {
+    DEVELOPER_UNLOCK_CODE: "replacement-secret-code",
+    SUBMISSION_LIMITER: {
+      limit: async ({ key }) => {
+        limiterKeys.push(key);
+        return { success: false };
+      }
     }
   });
-  const response = await worker.fetch(request, environment());
-  assert.equal(response.status, 204);
-  assert.equal(response.headers.get("access-control-allow-origin"), "*");
-  assert.match(response.headers.get("access-control-allow-methods"), /POST/);
-  assert.match(response.headers.get("access-control-allow-headers"), /Content-Type/i);
+  const response = await worker.fetch(
+    makeRequest("/api/developer-unlock", "POST", { code: "incorrect" }),
+    env
+  );
+  assert.equal(response.status, 429);
+  assert.deepEqual(limiterKeys, ["developer-unlock:unknown"]);
+});
+
+test("limits the size of developer unlock requests", async () => {
+  const request = new Request("https://benchmark.example/api/developer-unlock", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code: "x".repeat(1100) })
+  });
+  const response = await worker.fetch(
+    request,
+    environment(new TestDatabase(), { DEVELOPER_UNLOCK_CODE: "replacement-secret-code" })
+  );
+  assert.equal(response.status, 413);
 });
 
 test("rejects malformed or out-of-range submissions", async () => {

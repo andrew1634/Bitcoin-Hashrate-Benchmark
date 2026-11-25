@@ -11,6 +11,7 @@ internal sealed record BenchmarkHistoryEntry(
     public double HashesPerSecond => ElapsedSeconds > 0 ? Hashes / ElapsedSeconds : 0;
     public string BenchmarkType { get; init; } = "cpu";
     public string Backend { get; init; } = "unknown";
+    public int? WorkingSetMiB { get; init; }
 }
 
 internal sealed class BenchmarkHistoryStore
@@ -62,6 +63,8 @@ internal sealed class BenchmarkHistoryStore
                 || entry.Hashes < 0
                 || entry.BenchmarkType is not ("cpu" or "gpu" or "memory")
                 || string.IsNullOrWhiteSpace(entry.Backend)
+                || (entry.WorkingSetMiB.HasValue
+                    && (entry.WorkingSetMiB.Value is < 8 or > 256 || entry.WorkingSetMiB.Value % 8 != 0))
                 || !double.IsFinite(entry.ElapsedSeconds)
                 || entry.ElapsedSeconds <= 0)
             {

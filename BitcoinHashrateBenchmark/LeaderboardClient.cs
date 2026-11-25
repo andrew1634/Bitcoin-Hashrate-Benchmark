@@ -30,6 +30,7 @@ internal sealed record LeaderboardEntry(
 }
 
 internal sealed record LeaderboardResponse(List<LeaderboardEntry> Entries);
+internal sealed record DeveloperUnlockResponse(bool Unlocked);
 
 internal static class LeaderboardClient
 {
@@ -67,6 +68,27 @@ internal static class LeaderboardClient
             JsonOptions,
             cancellationToken);
         response.EnsureSuccessStatusCode();
+    }
+
+    public static async Task VerifyDeveloperCodeAsync(
+        string serviceUrl,
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await Http.PostAsJsonAsync(
+            BuildUri(serviceUrl, "developer-unlock"),
+            new { code },
+            JsonOptions,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<DeveloperUnlockResponse>(
+            JsonOptions,
+            cancellationToken);
+        if (result?.Unlocked != true)
+        {
+            throw new JsonException("The developer code response was invalid.");
+        }
     }
 
     private static Uri BuildUri(string serviceUrl, string path)

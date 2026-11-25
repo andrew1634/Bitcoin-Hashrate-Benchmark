@@ -115,6 +115,56 @@ async function readLimitedBody(request, maxBytes) {
   return new TextDecoder("utf-8", { fatal: true }).decode(body);
 }
 
+function hashesMatch(first, second) {
+  if (first.byteLength !== second.byteLength) return false;
+  let difference = 0;
+  for (let index = 0; index < first.byteLength; index++) {
+    difference |= first[index] ^ second[index];
+  }
+  return difference === 0;
+}
+
+async function verifyDeveloperUnlock(request, env) {
+  const expectedCode = env.DEVELOPER_UNLOCK_CODE;
+  if (typeof expectedCode !== "string" || expectedCode.length < 12 || expectedCode.length > 256) {
+    return error("Developer unlock is not configured.", 503);
+  }
+
+  const clientIp = request.headers.get("CF-Connecting-IP") ?? "unknown";
+  const { success } = await env.SUBMISSION_LIMITER.limit({ key: `developer-unlock:${clientIp}` });
+  if (!success) return error("Too many code attempts. Please wait a minute and try again.", 429);
+
+  let body;
+  try {
+    body = await readLimitedBody(request, 1024);
+  } catch {
+    return error("Request body must be valid UTF-8.", 400);
+  }
+  if (body === null) return error("Request body is too large.", 413);
+
+  let value;
+  try {
+    value = JSON.parse(body);
+  } catch {
+    return error("Request body must be valid JSON.", 400);
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)
+    || typeof value.code !== "string" || value.code.length < 1 || value.code.length > 256) {
+    return error("A valid developer code is required.", 400);
+  }
+
+  const encoder = new TextEncoder();
+  const [expectedDigest, suppliedDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(expectedCode)),
+    crypto.subtle.digest("SHA-256", encoder.encode(value.code))
+  ]);
+  if (!hashesMatch(new Uint8Array(expectedDigest), new Uint8Array(suppliedDigest))) {
+    return error("The developer code was not accepted.", 401);
+  }
+
+  return respond({ unlocked: true });
+}
+
 async function getLeaderboard(request, db) {
   const url = new URL(request.url);
   const sort = url.searchParams.get("sort") === "newest" ? "newest" : "performance";
@@ -204,7 +254,9 @@ export default {
     }
 
     if (request.method === "OPTIONS"
-      && (url.pathname === "/api/leaderboard" || url.pathname === "/api/submissions")) {
+      && (url.pathname === "/api/leaderboard"
+        || url.pathname === "/api/submissions"
+        || url.pathname === "/api/developer-unlock")) {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
 
@@ -223,6 +275,15 @@ export default {
       } catch (cause) {
         console.error("Could not save a public leaderboard submission.", cause);
         return error("The submission could not be saved. Please try again later.", 503);
+      }
+    }
+
+    if (url.pathname === "/api/developer-unlock" && request.method === "POST") {
+      try {
+        return await verifyDeveloperUnlock(request, env);
+      } catch (cause) {
+        console.error("Could not validate a developer code.", cause);
+        return error("Developer code validation is temporarily unavailable.", 503);
       }
     }
 

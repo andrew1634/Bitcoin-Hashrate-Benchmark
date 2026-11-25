@@ -2,6 +2,25 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.8] - Unstable Beta
+
+### Added
+
+- CSV export and compatible recent-run score comparisons in the browser and Windows app.
+- Configurable Windows RAM benchmark working sets from 8 to 256 MiB.
+- Server-validated developer settings unlock, with per-client attempt rate limiting.
+
+### Changed
+
+- Developer unlock is no longer embedded in the v1.0.8 browser or Windows app; Cloudflare must have the `DEVELOPER_UNLOCK_CODE` secret configured.
+- The unlock is session-only and is not trusted from saved preferences.
+- Updated browser and Windows version labels to unstable beta v1.0.8.
+
+### Notes
+
+- The previous v1.0.7 client-side code was already public and cannot be made secret retroactively.
+- The developer code is not payment verification.
+
 ## [1.0.7] - Unstable Beta
 
 ### Added

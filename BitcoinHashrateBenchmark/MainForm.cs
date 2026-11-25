@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Win32;
@@ -13,13 +14,13 @@ internal sealed class MainForm : Form
     private static Color MutedColor = Color.FromArgb(96, 96, 96);
     private static Color AccentColor = SystemColors.Highlight;
     private static Color TextColor = Color.Black;
-    private const string DeveloperUnlockCode = "Onlythedeveloperknows";
 
     private readonly ComboBox durationBox = new();
     private readonly ComboBox benchmarkModeBox = new();
     private readonly NumericUpDown threadCountBox = new();
     private readonly Button startButton = new();
     private readonly Button clearHistoryButton = new();
+    private readonly Button exportHistoryButton = new();
     private readonly Button submitLeaderboardButton = new();
     private readonly Button refreshLeaderboardButton = new();
     private readonly TextBox leaderboardUrlBox = new();
@@ -31,6 +32,8 @@ internal sealed class MainForm : Form
     private readonly NumericUpDown fontSizeBox = new();
     private readonly NumericUpDown customDurationBox = new();
     private readonly NumericUpDown customThreadCountBox = new();
+    private readonly NumericUpDown bandwidthWorkingSetBox = new();
+    private readonly NumericUpDown latencyWorkingSetBox = new();
     private readonly TextBox developerCodeBox = new();
     private readonly Button unlockSettingsButton = new();
     private readonly Button saveCustomizationButton = new();
@@ -39,6 +42,7 @@ internal sealed class MainForm : Form
     private readonly Label statusLabel = new();
     private readonly Label settingsStatusLabel = new();
     private readonly Label historyStatusLabel = new();
+    private readonly Label historyComparisonLabel = new();
     private readonly Label leaderboardStatusLabel = new();
     private readonly Label deviceModelCaption = new();
     private readonly Label threadCountCaption = new();
@@ -69,7 +73,7 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.7 UNSTABLE";
+        Text = "Bitcoin Hashrate Benchmark v1.0.8 UNSTABLE";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);
@@ -114,7 +118,7 @@ internal sealed class MainForm : Form
         };
         benchmarkLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 88));
-        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 148));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -132,7 +136,7 @@ internal sealed class MainForm : Form
         });
         heading.Controls.Add(new Label
         {
-            Text = "Local CPU/GPU and memory benchmark · Version 1.0.7 UNSTABLE",
+            Text = "Local CPU/GPU and memory benchmark · Version 1.0.8 UNSTABLE",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
@@ -154,14 +158,16 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(14, 8, 14, 8),
             ColumnCount = 3,
-            RowCount = 2,
+            RowCount = 4,
             BackColor = PanelColor
         };
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
-        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        settingsGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         settings.Controls.Add(settingsGrid);
         settingsGrid.Controls.Add(CreateCaption("BENCHMARK DEVICE"), 0, 0);
         settingsGrid.Controls.Add(CreateCaption("TEST DURATION"), 1, 0);
@@ -187,6 +193,14 @@ internal sealed class MainForm : Form
         threadCountBox.ThousandsSeparator = true;
         StyleInput(threadCountBox);
         settingsGrid.Controls.Add(threadCountBox, 2, 1);
+        settingsGrid.Controls.Add(CreateCaption("BANDWIDTH WORKING SET (MiB)"), 0, 2);
+        settingsGrid.Controls.Add(CreateCaption("LATENCY WORKING SET (MiB)"), 1, 2);
+        ConfigureWorkingSetBox(bandwidthWorkingSetBox, appSettings.BandwidthWorkingSetMiB);
+        ConfigureWorkingSetBox(latencyWorkingSetBox, appSettings.LatencyWorkingSetMiB);
+        settingsGrid.Controls.Add(bandwidthWorkingSetBox, 0, 3);
+        settingsGrid.Controls.Add(latencyWorkingSetBox, 1, 3);
+        bandwidthWorkingSetBox.ValueChanged += (_, _) => SaveWorkingSetSettings();
+        latencyWorkingSetBox.ValueChanged += (_, _) => SaveWorkingSetSettings();
         benchmarkLayout.Controls.Add(settings, 0, 1);
 
         var results = CreateCard();
@@ -242,14 +256,16 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(24),
-            ColumnCount = 2,
-            RowCount = 3,
+            ColumnCount = 3,
+            RowCount = 4,
             BackColor = BackgroundColor
         };
         historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
         historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         historyLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
         historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         historyPage.Controls.Add(historyLayout);
         historyLayout.Controls.Add(new Label
@@ -266,20 +282,31 @@ internal sealed class MainForm : Form
         clearHistoryButton.UseVisualStyleBackColor = true;
         clearHistoryButton.FlatStyle = FlatStyle.Standard;
         clearHistoryButton.Click += (_, _) => ClearHistory();
-        historyLayout.Controls.Add(clearHistoryButton, 1, 0);
+        exportHistoryButton.Text = "Export CSV";
+        exportHistoryButton.Dock = DockStyle.Fill;
+        exportHistoryButton.UseVisualStyleBackColor = true;
+        exportHistoryButton.FlatStyle = FlatStyle.Standard;
+        exportHistoryButton.Click += (_, _) => ExportHistoryCsv();
+        historyLayout.Controls.Add(exportHistoryButton, 1, 0);
+        historyLayout.Controls.Add(clearHistoryButton, 2, 0);
         historyList.Dock = DockStyle.Fill;
         historyList.BackColor = PanelColor;
         historyList.ForeColor = Color.Black;
         historyList.BorderStyle = BorderStyle.FixedSingle;
         historyList.HorizontalScrollbar = true;
         historyLayout.Controls.Add(historyList, 0, 1);
-        historyLayout.SetColumnSpan(historyList, 2);
+        historyLayout.SetColumnSpan(historyList, 3);
         historyStatusLabel.Text = "Saved locally on this PC.";
         historyStatusLabel.ForeColor = MutedColor;
         historyStatusLabel.Dock = DockStyle.Fill;
         historyStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
         historyLayout.Controls.Add(historyStatusLabel, 0, 2);
-        historyLayout.SetColumnSpan(historyStatusLabel, 2);
+        historyLayout.SetColumnSpan(historyStatusLabel, 3);
+        historyComparisonLabel.ForeColor = MutedColor;
+        historyComparisonLabel.Dock = DockStyle.Fill;
+        historyComparisonLabel.TextAlign = ContentAlignment.MiddleLeft;
+        historyLayout.Controls.Add(historyComparisonLabel, 0, 3);
+        historyLayout.SetColumnSpan(historyComparisonLabel, 3);
         tabs.TabPages.Add(benchmarkPage);
         tabs.TabPages.Add(historyPage);
 
@@ -455,11 +482,12 @@ internal sealed class MainForm : Form
         };
         developerCodeBox.Width = 260;
         developerCodeBox.PlaceholderText = "Developer code";
+        developerCodeBox.UseSystemPasswordChar = true;
         StyleInput(developerCodeBox);
         codeRow.Controls.Add(developerCodeBox);
         unlockSettingsButton.Text = appSettings.CustomizationUnlocked ? "Settings unlocked" : "Unlock settings";
         unlockSettingsButton.AutoSize = true;
-        unlockSettingsButton.Click += (_, _) => UnlockDeveloperSettings();
+        unlockSettingsButton.Click += async (_, _) => await UnlockDeveloperSettingsAsync();
         codeRow.Controls.Add(unlockSettingsButton);
         layout.Controls.Add(codeRow, 0, 2);
 
@@ -529,23 +557,35 @@ internal sealed class MainForm : Form
         return page;
     }
 
-    private void UnlockDeveloperSettings()
+    private async Task UnlockDeveloperSettingsAsync()
     {
-        if (!string.Equals(developerCodeBox.Text, DeveloperUnlockCode, StringComparison.Ordinal))
+        var code = developerCodeBox.Text;
+        if (string.IsNullOrWhiteSpace(code))
         {
-            settingsStatusLabel.Text = "That developer code was not accepted.";
+            settingsStatusLabel.Text = "Enter the developer code to continue.";
             return;
         }
 
-        appSettings = appSettings with { CustomizationUnlocked = true };
-        if (!SaveAppSettings())
+        unlockSettingsButton.Enabled = false;
+        settingsStatusLabel.Text = "Checking developer code...";
+        try
         {
-            appSettings = appSettings with { CustomizationUnlocked = false };
-            return;
+            await LeaderboardClient.VerifyDeveloperCodeAsync(leaderboardUrlBox.Text, code);
+            appSettings = appSettings with { CustomizationUnlocked = true };
+            EnableCustomization();
+            settingsStatusLabel.Text = "Developer customization settings unlocked for this session.";
         }
-
-        EnableCustomization();
-        settingsStatusLabel.Text = "Developer customization settings unlocked.";
+        catch (Exception exception) when (
+            exception is HttpRequestException or UriFormatException or JsonException or TaskCanceledException or
+                InvalidOperationException)
+        {
+            settingsStatusLabel.Text = $"Could not verify developer code: {exception.Message}";
+        }
+        finally
+        {
+            developerCodeBox.Clear();
+            unlockSettingsButton.Enabled = true;
+        }
     }
 
     private void EnableCustomization()
@@ -778,6 +818,9 @@ internal sealed class MainForm : Form
                             ? MemoryBenchmarkKind.Bandwidth
                             : MemoryBenchmarkKind.Latency,
                         duration,
+                        benchmarkModeBox.SelectedIndex == 2
+                            ? (int)bandwidthWorkingSetBox.Value
+                            : (int)latencyWorkingSetBox.Value,
                         progress,
                         runCancellation.Token)
                     : await HashRateBenchmark.RunAsync(
@@ -796,7 +839,12 @@ internal sealed class MainForm : Form
                 result.Elapsed.TotalSeconds)
             {
                 BenchmarkType = latestBenchmarkType,
-                Backend = latestBackend
+                Backend = latestBackend,
+                WorkingSetMiB = useMemory
+                    ? benchmarkModeBox.SelectedIndex == 2
+                        ? (int)bandwidthWorkingSetBox.Value
+                        : (int)latencyWorkingSetBox.Value
+                    : null
             });
             if ((!stoppedByUser || infiniteRun) && !useMemory)
             {
@@ -877,6 +925,8 @@ internal sealed class MainForm : Form
         benchmarkModeBox.Enabled = enabled;
         durationBox.Enabled = enabled;
         threadCountBox.Enabled = enabled && benchmarkModeBox.SelectedIndex == 0;
+        bandwidthWorkingSetBox.Enabled = enabled && benchmarkModeBox.SelectedIndex == 2;
+        latencyWorkingSetBox.Enabled = enabled && benchmarkModeBox.SelectedIndex == 3;
     }
 
     private void UpdateBenchmarkMode()
@@ -884,6 +934,8 @@ internal sealed class MainForm : Form
         var gpuSelected = benchmarkModeBox.SelectedIndex == 1;
         var memorySelected = benchmarkModeBox.SelectedIndex is 2 or 3;
         threadCountBox.Enabled = !gpuSelected && !memorySelected && runCancellation is null;
+        bandwidthWorkingSetBox.Enabled = benchmarkModeBox.SelectedIndex == 2 && runCancellation is null;
+        latencyWorkingSetBox.Enabled = benchmarkModeBox.SelectedIndex == 3 && runCancellation is null;
         threadCountCaption.Text = gpuSelected
             ? "GPU DISPATCH"
             : memorySelected ? "MEMORY TEST" : "CPU LOGICAL THREADS";
@@ -904,8 +956,34 @@ internal sealed class MainForm : Form
             statusLabel.Text = gpuSelected
                 ? "Requires a Direct3D 12 GPU. Stop if your device gets hot or sluggish."
                 : memorySelected
-                    ? "Bandwidth uses two 64 MiB buffers; latency uses a 64 MiB chain and setup array. Stop if your device gets hot or sluggish."
+                    ? $"Bandwidth uses two {bandwidthWorkingSetBox.Value} MiB buffers; latency uses a "
+                        + $"{latencyWorkingSetBox.Value} MiB chain and setup array. Stop if your device gets hot or sluggish."
                     : "Ready when you are.";
+        }
+    }
+
+    private static void ConfigureWorkingSetBox(NumericUpDown box, int value)
+    {
+        box.Minimum = 8;
+        box.Maximum = 256;
+        box.Increment = 8;
+        box.Value = value;
+        box.Enabled = false;
+        box.ThousandsSeparator = true;
+        StyleInput(box);
+    }
+
+    private void SaveWorkingSetSettings()
+    {
+        appSettings = appSettings with
+        {
+            BandwidthWorkingSetMiB = (int)bandwidthWorkingSetBox.Value,
+            LatencyWorkingSetMiB = (int)latencyWorkingSetBox.Value
+        };
+        SaveAppSettings();
+        if (runCancellation is null && benchmarkModeBox.SelectedIndex is 2 or 3)
+        {
+            UpdateBenchmarkMode();
         }
     }
 
@@ -1082,11 +1160,75 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void ExportHistoryCsv()
+    {
+        try
+        {
+            var entries = historyStore.Load();
+            if (entries.Count == 0)
+            {
+                historyStatusLabel.Text = "There are no runs to export.";
+                return;
+            }
+
+            using var dialog = new SaveFileDialog
+            {
+                Filter = "CSV files (*.csv)|*.csv",
+                FileName = "bitcoin-hashrate-history.csv",
+                AddExtension = true,
+                DefaultExt = "csv",
+                OverwritePrompt = true
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            var lines = new List<string>
+            {
+                "completedAt,benchmarkType,backend,threads,workingSetMiB,work,workUnit,elapsedSeconds,score,scoreUnit"
+            };
+            lines.AddRange(entries.Select(entry =>
+            {
+                var (score, scoreUnit, workUnit, _) = GetHistoryScore(entry);
+                var work = EscapeCsv(entry.Hashes.ToString(CultureInfo.InvariantCulture));
+                return string.Join(",",
+                    EscapeCsv(entry.CompletedAt.ToString("O", CultureInfo.InvariantCulture)),
+                    EscapeCsv(entry.BenchmarkType),
+                    EscapeCsv(entry.Backend),
+                    entry.ThreadCount.ToString(CultureInfo.InvariantCulture),
+                    entry.WorkingSetMiB?.ToString(CultureInfo.InvariantCulture) ?? "",
+                    work,
+                    EscapeCsv(workUnit),
+                    entry.ElapsedSeconds.ToString("F3", CultureInfo.InvariantCulture),
+                    score.ToString("F3", CultureInfo.InvariantCulture),
+                    EscapeCsv(scoreUnit));
+            }));
+            File.WriteAllText(
+                dialog.FileName,
+                string.Join(Environment.NewLine, lines),
+                new System.Text.UTF8Encoding(false));
+            historyStatusLabel.Text = $"Exported {entries.Count} run(s) to CSV.";
+        }
+        catch (Exception exception) when (
+            exception is InvalidDataException or IOException or UnauthorizedAccessException or JsonException)
+        {
+            historyStatusLabel.Text = $"Could not export history: {exception.Message}";
+        }
+    }
+
+    private static string EscapeCsv(string value)
+    {
+        var formulaValue = value.TrimStart();
+        var safeValue = formulaValue.Length > 0 && formulaValue[0] is '=' or '+' or '-' or '@'
+            ? $"'{value}"
+            : value;
+        return $"\"{safeValue.Replace("\"", "\"\"")}\"";
+    }
+
     private void RenderHistory(IEnumerable<BenchmarkHistoryEntry> entries)
     {
+        var history = entries.ToList();
         historyList.BeginUpdate();
         historyList.Items.Clear();
-        foreach (var entry in entries)
+        foreach (var entry in history)
         {
             var benchmarkType = entry.BenchmarkType.ToUpperInvariant();
             if (entry.BenchmarkType == "memory")
@@ -1112,7 +1254,42 @@ internal sealed class MainForm : Form
         }
         historyList.EndUpdate();
         clearHistoryButton.Enabled = historyList.Items.Count > 0;
+        historyComparisonLabel.Text = CompareRecentRuns(history);
     }
+
+    private string CompareRecentRuns(IReadOnlyList<BenchmarkHistoryEntry> history)
+    {
+        if (history.Count < 2) return "Comparison: complete another compatible run to compare scores.";
+
+        var latest = history[0];
+        var previous = history.Skip(1).FirstOrDefault(entry =>
+            entry.BenchmarkType == latest.BenchmarkType
+            && entry.Backend == latest.Backend
+            && (latest.BenchmarkType != "cpu" || entry.ThreadCount == latest.ThreadCount)
+            && (latest.BenchmarkType != "memory" || entry.WorkingSetMiB == latest.WorkingSetMiB));
+        if (previous is null) return "Comparison: no recent run with a matching benchmark configuration.";
+
+        var (latestScore, unit, _, higherIsBetter) = GetHistoryScore(latest);
+        var (previousScore, _, _, _) = GetHistoryScore(previous);
+        var improvement = previousScore > 0
+            ? (latestScore / previousScore - 1) * (higherIsBetter ? 100 : -100)
+            : 0;
+        var comparison = previousScore > 0
+            ? $"{improvement:+0.0;-0.0;0.0}% {(improvement >= 0 ? "faster" : "slower")}"
+            : "previous score unavailable";
+        return $"Latest compatible run: {latestScore:F2} {unit} vs {previousScore:F2} {unit} "
+            + $"({comparison}; {previous.CompletedAt.LocalDateTime:g}).";
+    }
+
+    private static (double Score, string ScoreUnit, string WorkUnit, bool HigherIsBetter) GetHistoryScore(
+        BenchmarkHistoryEntry entry) =>
+        entry.Backend switch
+        {
+            "ram-bandwidth" => (entry.HashesPerSecond / 1_048_576, "MiB/s", "bytes read + written", true),
+            "ram-latency" => (entry.HashesPerSecond > 0 ? 1_000_000_000 / entry.HashesPerSecond : 0,
+                "ns/access", "memory accesses", false),
+            _ => (entry.HashesPerSecond, "H/s", "hashes", true)
+        };
 
     private string FormatCurrentRate(double workPerSecond)
     {
