@@ -2,6 +2,14 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.4] - Beta
+
+### Changed
+
+- Updated the Windows app to a plain white interface with standard Windows controls.
+- Updated browser and Windows version labels for the 1.0.4 beta.
+- Windows downloads are distributed as standalone executables rather than ZIP archives.
+
 ## [1.0.3] - Beta
 
 ### Fixed

@@ -1,6 +1,6 @@
 # Bitcoin Hashrate Benchmark
 
-**Browser beta v1.0.3 · Windows desktop beta v1.0.3**
+**Browser beta v1.0.4 · Windows desktop beta v1.0.4**
 
 > **Created by Andrew Miller** — building cross-platform apps and learning through hands-on projects.
 >
@@ -10,7 +10,7 @@
 
 A local benchmark for comparing how devices perform SHA-256 double hashing. The Windows desktop app and standalone browser version are for learning and performance testing only. The Windows app can be published for x64 and ARM64; the browser version can run on compatible Windows, Android, and iOS browsers, including on ARM32 and ARM64 devices.
 
-Version 1.0.3 is a beta. It benchmarks using the CPU; GPU benchmarking is planned for a later beta.
+Version 1.0.4 is a beta. It benchmarks using the CPU; GPU benchmarking is planned for a later beta.
 
 ## What this measures
 

@@ -8,10 +8,10 @@ namespace BitcoinHashrateBenchmark;
 
 internal sealed class MainForm : Form
 {
-    private static readonly Color BackgroundColor = Color.FromArgb(15, 23, 42);
-    private static readonly Color PanelColor = Color.FromArgb(30, 41, 59);
-    private static readonly Color MutedColor = Color.FromArgb(148, 163, 184);
-    private static readonly Color AccentColor = Color.FromArgb(34, 197, 94);
+    private static readonly Color BackgroundColor = Color.White;
+    private static readonly Color PanelColor = Color.White;
+    private static readonly Color MutedColor = Color.FromArgb(96, 96, 96);
+    private static readonly Color AccentColor = SystemColors.Highlight;
 
     private readonly ComboBox durationBox = new();
     private readonly NumericUpDown threadCountBox = new();
@@ -42,12 +42,12 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.3 beta";
+        Text = "Bitcoin Hashrate Benchmark v1.0.4 beta";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(620, 560);
         Size = new Size(860, 680);
         BackColor = BackgroundColor;
-        ForeColor = Color.White;
+        ForeColor = Color.Black;
         Font = new Font("Segoe UI", 10);
 
         BuildInterface();
@@ -89,13 +89,13 @@ internal sealed class MainForm : Form
         {
             Text = "Bitcoin Hashrate Benchmark",
             Font = new Font("Segoe UI Semibold", 19, FontStyle.Bold),
-            ForeColor = Color.White,
+            ForeColor = Color.Black,
             AutoSize = true,
             Location = new Point(0, 0)
         });
         heading.Controls.Add(new Label
         {
-            Text = "Local CPU SHA-256 benchmark · Version 1.0.3 beta",
+            Text = "Local CPU SHA-256 benchmark · Version 1.0.4 beta",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
@@ -174,12 +174,10 @@ internal sealed class MainForm : Form
             BackColor = BackgroundColor
         };
         startButton.Text = "Start benchmark";
-        startButton.BackColor = AccentColor;
-        startButton.ForeColor = Color.FromArgb(5, 20, 12);
-        startButton.FlatStyle = FlatStyle.Flat;
-        startButton.FlatAppearance.BorderSize = 0;
-        startButton.Font = new Font("Segoe UI Semibold", 10, FontStyle.Bold);
-        startButton.Size = new Size(180, 40);
+        startButton.UseVisualStyleBackColor = true;
+        startButton.FlatStyle = FlatStyle.Standard;
+        startButton.Font = new Font("Segoe UI", 10);
+        startButton.Size = new Size(160, 34);
         startButton.Click += async (_, _) => await ToggleBenchmarkAsync();
         benchmarkActions.Controls.Add(startButton);
         benchmarkLayout.Controls.Add(benchmarkActions, 0, 5);
@@ -203,22 +201,20 @@ internal sealed class MainForm : Form
         {
             Text = "Recent runs (last 10)",
             Dock = DockStyle.Fill,
-            ForeColor = Color.White,
+            ForeColor = Color.Black,
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI Semibold", 12, FontStyle.Bold)
         }, 0, 0);
         clearHistoryButton.Text = "Clear";
         clearHistoryButton.Enabled = false;
         clearHistoryButton.Dock = DockStyle.Fill;
-        clearHistoryButton.BackColor = PanelColor;
-        clearHistoryButton.ForeColor = Color.White;
-        clearHistoryButton.FlatStyle = FlatStyle.Flat;
-        clearHistoryButton.FlatAppearance.BorderColor = MutedColor;
+        clearHistoryButton.UseVisualStyleBackColor = true;
+        clearHistoryButton.FlatStyle = FlatStyle.Standard;
         clearHistoryButton.Click += (_, _) => ClearHistory();
         historyLayout.Controls.Add(clearHistoryButton, 1, 0);
         historyList.Dock = DockStyle.Fill;
         historyList.BackColor = PanelColor;
-        historyList.ForeColor = Color.White;
+        historyList.ForeColor = Color.Black;
         historyList.BorderStyle = BorderStyle.FixedSingle;
         historyList.HorizontalScrollbar = true;
         historyLayout.Controls.Add(historyList, 0, 1);
@@ -253,7 +249,7 @@ internal sealed class MainForm : Form
         {
             Text = "Public leaderboard · submissions are unverified",
             Dock = DockStyle.Fill,
-            ForeColor = Color.White,
+            ForeColor = Color.Black,
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI Semibold", 12, FontStyle.Bold)
         }, 0, 0);
@@ -325,7 +321,7 @@ internal sealed class MainForm : Form
         leaderboardLayout.Controls.Add(leaderboardActions, 0, 3);
         leaderboardList.Dock = DockStyle.Fill;
         leaderboardList.BackColor = PanelColor;
-        leaderboardList.ForeColor = Color.White;
+        leaderboardList.ForeColor = Color.Black;
         leaderboardList.BorderStyle = BorderStyle.FixedSingle;
         leaderboardList.HorizontalScrollbar = true;
         leaderboardLayout.Controls.Add(leaderboardList, 0, 4);
@@ -668,7 +664,7 @@ internal sealed class MainForm : Form
         {
             Text = "—",
             AutoSize = true,
-            ForeColor = Color.White,
+            ForeColor = Color.Black,
             Font = new Font("Segoe UI Semibold", 16, FontStyle.Bold),
             Location = new Point(0, 23)
         };
@@ -680,8 +676,8 @@ internal sealed class MainForm : Form
     {
         control.Dock = DockStyle.Fill;
         control.Margin = new Padding(0);
-        control.BackColor = BackgroundColor;
-        control.ForeColor = Color.White;
+        control.BackColor = Color.White;
+        control.ForeColor = Color.Black;
         control.Font = new Font("Segoe UI", 10);
     }
 }
