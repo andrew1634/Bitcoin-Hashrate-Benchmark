@@ -42,10 +42,10 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "Bitcoin Hashrate Benchmark v1.0.1";
+        Text = "Bitcoin Hashrate Benchmark v1.0.3 beta";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(620, 870);
-        Size = new Size(760, 980);
+        MinimumSize = new Size(620, 560);
+        Size = new Size(860, 680);
         BackColor = BackgroundColor;
         ForeColor = Color.White;
         Font = new Font("Segoe UI", 10);
@@ -58,249 +58,121 @@ internal sealed class MainForm : Form
 
     private void BuildInterface()
     {
-        var layout = new TableLayoutPanel
+        var tabs = new TabControl
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(34, 28, 34, 24),
+            Padding = new Point(14, 6),
+            Font = new Font("Segoe UI", 10)
+        };
+        Controls.Add(tabs);
+
+        var benchmarkPage = new TabPage("Benchmark") { BackColor = BackgroundColor };
+        var benchmarkLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(24),
             ColumnCount = 1,
-            RowCount = 8,
+            RowCount = 6,
             BackColor = BackgroundColor
         };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 90));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 108));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 115));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 150));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 230));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        Controls.Add(layout);
+        benchmarkLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 148));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        benchmarkLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        benchmarkPage.Controls.Add(benchmarkLayout);
 
         var heading = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         heading.Controls.Add(new Label
         {
-            Text = "BITCOIN HASHRATE BENCHMARK",
-            Font = new Font("Segoe UI Semibold", 18, FontStyle.Bold),
+            Text = "Bitcoin Hashrate Benchmark",
+            Font = new Font("Segoe UI Semibold", 19, FontStyle.Bold),
             ForeColor = Color.White,
             AutoSize = true,
             Location = new Point(0, 0)
         });
         heading.Controls.Add(new Label
         {
-            Text = "Measure your PC's SHA-256 double-hash speed | v1.0.1",
+            Text = "Local CPU SHA-256 benchmark · Version 1.0.3 beta",
             Font = new Font("Segoe UI", 10),
             ForeColor = MutedColor,
             AutoSize = true,
-            Location = new Point(2, 42)
+            Location = new Point(2, 36)
         });
-        heading.Controls.Add(new Label
-        {
-            Text = "Idea: Andrew Miller | AI coding: Copilot Fusion",
-            Font = new Font("Segoe UI", 8),
-            ForeColor = MutedColor,
-            AutoSize = true,
-            Location = new Point(2, 66)
-        });
-        layout.Controls.Add(heading, 0, 0);
+        benchmarkLayout.Controls.Add(heading, 0, 0);
 
         var settings = CreateCard();
         var settingsGrid = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(18, 12, 18, 12),
+            Padding = new Padding(14, 8, 14, 8),
             ColumnCount = 4,
             RowCount = 2,
             BackColor = PanelColor
         };
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 16));
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 18));
         settingsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 1));
         settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         settingsGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         settings.Controls.Add(settingsGrid);
-
         settingsGrid.Controls.Add(CreateCaption("TEST DURATION"), 0, 0);
-        settingsGrid.Controls.Add(CreateCaption("CPU THREADS"), 1, 0);
-
+        settingsGrid.Controls.Add(CreateCaption("CPU THREADS"), 2, 0);
         durationBox.DropDownStyle = ComboBoxStyle.DropDownList;
         durationBox.Items.AddRange(["5 seconds", "10 seconds", "30 seconds"]);
         durationBox.SelectedIndex = 1;
         StyleInput(durationBox);
         settingsGrid.Controls.Add(durationBox, 0, 1);
-
         threadCountBox.Minimum = 1;
         threadCountBox.Maximum = Math.Max(1, Environment.ProcessorCount);
         threadCountBox.Value = Math.Max(1, Environment.ProcessorCount);
         threadCountBox.ThousandsSeparator = true;
         StyleInput(threadCountBox);
-        settingsGrid.Controls.Add(threadCountBox, 1, 1);
-        layout.Controls.Add(settings, 0, 1);
+        settingsGrid.Controls.Add(threadCountBox, 2, 1);
+        benchmarkLayout.Controls.Add(settings, 0, 1);
 
         var results = CreateCard();
         var resultsLayout = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(18, 12, 18, 12),
-            ColumnCount = 2,
-            RowCount = 2,
+            Padding = new Padding(14, 10, 14, 10),
+            ColumnCount = 3,
+            RowCount = 1,
             BackColor = PanelColor
         };
-        resultsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        resultsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        resultsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        resultsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        for (var index = 0; index < 3; index++)
+        {
+            resultsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
+        }
+        resultsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         resultsLayout.Controls.Add(CreateMetric("HASH RATE", out rateLabel), 0, 0);
         resultsLayout.Controls.Add(CreateMetric("TOTAL HASHES", out hashesLabel), 1, 0);
-        resultsLayout.Controls.Add(CreateMetric("ELAPSED", out elapsedLabel), 0, 1);
+        resultsLayout.Controls.Add(CreateMetric("ELAPSED", out elapsedLabel), 2, 0);
         results.Controls.Add(resultsLayout);
-        layout.Controls.Add(results, 0, 2);
-
-        var history = CreateCard();
-        var historyLayout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(16, 8, 16, 8),
-            ColumnCount = 2,
-            RowCount = 3,
-            BackColor = PanelColor
-        };
-        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
-        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-        historyLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
-        historyLayout.Controls.Add(CreateCaption("RECENT RUNS (LAST 10)"), 0, 0);
-
-        clearHistoryButton.Text = "Clear";
-        clearHistoryButton.Enabled = false;
-        clearHistoryButton.Size = new Size(82, 25);
-        clearHistoryButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        clearHistoryButton.BackColor = BackgroundColor;
-        clearHistoryButton.ForeColor = Color.White;
-        clearHistoryButton.FlatStyle = FlatStyle.Flat;
-        clearHistoryButton.FlatAppearance.BorderColor = MutedColor;
-        clearHistoryButton.Click += (_, _) => ClearHistory();
-        historyLayout.Controls.Add(clearHistoryButton, 1, 0);
-
-        historyList.Dock = DockStyle.Fill;
-        historyList.BackColor = BackgroundColor;
-        historyList.ForeColor = Color.White;
-        historyList.BorderStyle = BorderStyle.None;
-        historyList.HorizontalScrollbar = true;
-        historyLayout.Controls.Add(historyList, 0, 1);
-        historyLayout.SetColumnSpan(historyList, 2);
-
-        historyStatusLabel.Text = "Saved locally on this PC.";
-        historyStatusLabel.ForeColor = MutedColor;
-        historyStatusLabel.AutoSize = true;
-        historyLayout.Controls.Add(historyStatusLabel, 0, 2);
-        historyLayout.SetColumnSpan(historyStatusLabel, 2);
-        history.Controls.Add(historyLayout);
-        layout.Controls.Add(history, 0, 3);
-
-        var leaderboard = CreateCard();
-        var leaderboardLayout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(16, 8, 16, 8),
-            ColumnCount = 1,
-            RowCount = 5,
-            BackColor = PanelColor
-        };
-        leaderboardLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
-        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
-        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
-        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
-        leaderboardLayout.Controls.Add(CreateCaption("PUBLIC LEADERBOARD · UNVERIFIED"), 0, 0);
-
-        var leaderboardSettings = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 3,
-            RowCount = 2,
-            BackColor = PanelColor
-        };
-        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15));
-        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
-        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        leaderboardSettings.Controls.Add(CreateCaption("SERVICE URL"), 0, 0);
-        leaderboardSettings.Controls.Add(CreateCaption("CPU MODEL (DETECTED, EDITABLE)"), 1, 0);
-        leaderboardSettings.Controls.Add(CreateCaption("ARCH"), 2, 0);
-
-        leaderboardUrlBox.PlaceholderText = "https://your-worker.workers.dev";
-        leaderboardUrlBox.AccessibleName = "Public leaderboard service URL";
-        StyleInput(leaderboardUrlBox);
-        leaderboardSettings.Controls.Add(leaderboardUrlBox, 0, 1);
-
-        cpuModelBox.Text = DetectCpuModel();
-        cpuModelBox.AccessibleName = "CPU model; edit before submitting if incorrect";
-        StyleInput(cpuModelBox);
-        leaderboardSettings.Controls.Add(cpuModelBox, 1, 1);
-
-        architectureBox.DropDownStyle = ComboBoxStyle.DropDownList;
-        architectureBox.Items.AddRange(["ARM64", "ARM32", "x64", "x86", "Other", "Unknown"]);
-        architectureBox.SelectedItem = DetectArchitecture();
-        architectureBox.AccessibleName = "Processor architecture";
-        StyleInput(architectureBox);
-        leaderboardSettings.Controls.Add(architectureBox, 2, 1);
-        leaderboardLayout.Controls.Add(leaderboardSettings, 0, 1);
-
-        var leaderboardActions = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
-            BackColor = PanelColor,
-            Padding = new Padding(0)
-        };
-        submitLeaderboardButton.Text = "Submit latest run";
-        submitLeaderboardButton.Enabled = false;
-        submitLeaderboardButton.Width = 150;
-        submitLeaderboardButton.Height = 28;
-        submitLeaderboardButton.Click += async (_, _) => await SubmitLatestRunAsync();
-        leaderboardActions.Controls.Add(submitLeaderboardButton);
-
-        refreshLeaderboardButton.Text = "Refresh";
-        refreshLeaderboardButton.Width = 90;
-        refreshLeaderboardButton.Height = 28;
-        refreshLeaderboardButton.Click += async (_, _) => await RefreshLeaderboardAsync();
-        leaderboardActions.Controls.Add(refreshLeaderboardButton);
-        leaderboardLayout.Controls.Add(leaderboardActions, 0, 2);
-
-        leaderboardList.Dock = DockStyle.Fill;
-        leaderboardList.BackColor = BackgroundColor;
-        leaderboardList.ForeColor = Color.White;
-        leaderboardList.BorderStyle = BorderStyle.None;
-        leaderboardList.HorizontalScrollbar = true;
-        leaderboardLayout.Controls.Add(leaderboardList, 0, 3);
-
-        leaderboardStatusLabel.Text = "Submitting is optional; public entries include device details and are unverified.";
-        leaderboardStatusLabel.ForeColor = MutedColor;
-        leaderboardStatusLabel.AutoSize = true;
-        leaderboardLayout.Controls.Add(leaderboardStatusLabel, 0, 4);
-        leaderboard.Controls.Add(leaderboardLayout);
-        layout.Controls.Add(leaderboard, 0, 4);
+        benchmarkLayout.Controls.Add(results, 0, 2);
 
         progressBar.Dock = DockStyle.Fill;
         progressBar.Style = ProgressBarStyle.Continuous;
         progressBar.ForeColor = AccentColor;
-        progressBar.Margin = new Padding(2, 12, 2, 12);
-        layout.Controls.Add(progressBar, 0, 5);
+        progressBar.Margin = new Padding(2, 10, 2, 10);
+        benchmarkLayout.Controls.Add(progressBar, 0, 3);
 
-        var bottom = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
         statusLabel.Text = "Ready when you are.";
+        statusLabel.Dock = DockStyle.Fill;
         statusLabel.ForeColor = MutedColor;
-        statusLabel.AutoSize = true;
-        statusLabel.Location = new Point(2, 12);
-        bottom.Controls.Add(statusLabel);
-        layout.Controls.Add(bottom, 0, 6);
+        statusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        benchmarkLayout.Controls.Add(statusLabel, 0, 4);
 
-        var actions = new Panel { Dock = DockStyle.Fill, BackColor = BackgroundColor };
+        var benchmarkActions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = BackgroundColor
+        };
         startButton.Text = "Start benchmark";
         startButton.BackColor = AccentColor;
         startButton.ForeColor = Color.FromArgb(5, 20, 12);
@@ -308,12 +180,161 @@ internal sealed class MainForm : Form
         startButton.FlatAppearance.BorderSize = 0;
         startButton.Font = new Font("Segoe UI Semibold", 10, FontStyle.Bold);
         startButton.Size = new Size(180, 40);
-        startButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
-        startButton.Location = new Point(actions.Width - startButton.Width, 4);
         startButton.Click += async (_, _) => await ToggleBenchmarkAsync();
-        actions.Resize += (_, _) => startButton.Location = new Point(actions.ClientSize.Width - startButton.Width, 4);
-        actions.Controls.Add(startButton);
-        layout.Controls.Add(actions, 0, 7);
+        benchmarkActions.Controls.Add(startButton);
+        benchmarkLayout.Controls.Add(benchmarkActions, 0, 5);
+
+        var historyPage = new TabPage("Recent runs") { BackColor = BackgroundColor };
+        var historyLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(24),
+            ColumnCount = 2,
+            RowCount = 3,
+            BackColor = BackgroundColor
+        };
+        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        historyLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        historyLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        historyPage.Controls.Add(historyLayout);
+        historyLayout.Controls.Add(new Label
+        {
+            Text = "Recent runs (last 10)",
+            Dock = DockStyle.Fill,
+            ForeColor = Color.White,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Segoe UI Semibold", 12, FontStyle.Bold)
+        }, 0, 0);
+        clearHistoryButton.Text = "Clear";
+        clearHistoryButton.Enabled = false;
+        clearHistoryButton.Dock = DockStyle.Fill;
+        clearHistoryButton.BackColor = PanelColor;
+        clearHistoryButton.ForeColor = Color.White;
+        clearHistoryButton.FlatStyle = FlatStyle.Flat;
+        clearHistoryButton.FlatAppearance.BorderColor = MutedColor;
+        clearHistoryButton.Click += (_, _) => ClearHistory();
+        historyLayout.Controls.Add(clearHistoryButton, 1, 0);
+        historyList.Dock = DockStyle.Fill;
+        historyList.BackColor = PanelColor;
+        historyList.ForeColor = Color.White;
+        historyList.BorderStyle = BorderStyle.FixedSingle;
+        historyList.HorizontalScrollbar = true;
+        historyLayout.Controls.Add(historyList, 0, 1);
+        historyLayout.SetColumnSpan(historyList, 2);
+        historyStatusLabel.Text = "Saved locally on this PC.";
+        historyStatusLabel.ForeColor = MutedColor;
+        historyStatusLabel.Dock = DockStyle.Fill;
+        historyStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        historyLayout.Controls.Add(historyStatusLabel, 0, 2);
+        historyLayout.SetColumnSpan(historyStatusLabel, 2);
+        tabs.TabPages.Add(benchmarkPage);
+        tabs.TabPages.Add(historyPage);
+
+        var leaderboardPage = new TabPage("Leaderboard") { BackColor = BackgroundColor };
+        var leaderboardLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(24),
+            ColumnCount = 1,
+            RowCount = 6,
+            BackColor = BackgroundColor
+        };
+        leaderboardLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 100));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        leaderboardLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        leaderboardPage.Controls.Add(leaderboardLayout);
+        leaderboardLayout.Controls.Add(new Label
+        {
+            Text = "Public leaderboard · submissions are unverified",
+            Dock = DockStyle.Fill,
+            ForeColor = Color.White,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Segoe UI Semibold", 12, FontStyle.Bold)
+        }, 0, 0);
+
+        var leaderboardSettings = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 96,
+            ColumnCount = 1,
+            RowCount = 2,
+            BackColor = PanelColor
+        };
+        leaderboardSettings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        leaderboardSettings.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        leaderboardSettings.Padding = new Padding(12);
+        leaderboardSettings.Controls.Add(CreateCaption("SERVICE URL"), 0, 0);
+        leaderboardUrlBox.PlaceholderText = LeaderboardSettingsStore.DefaultServiceUrl;
+        leaderboardUrlBox.AccessibleName = "Public leaderboard service URL";
+        StyleInput(leaderboardUrlBox);
+        leaderboardSettings.Controls.Add(leaderboardUrlBox, 0, 1);
+        leaderboardLayout.Controls.Add(leaderboardSettings, 0, 1);
+
+        var deviceDetails = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 2,
+            BackColor = BackgroundColor
+        };
+        deviceDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55));
+        deviceDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 12));
+        deviceDetails.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
+        deviceDetails.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+        deviceDetails.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        deviceDetails.Controls.Add(CreateCaption("CPU MODEL (EDITABLE)"), 0, 0);
+        deviceDetails.Controls.Add(CreateCaption("ARCHITECTURE"), 2, 0);
+        cpuModelBox.Text = DetectCpuModel();
+        cpuModelBox.AccessibleName = "CPU model; edit before submitting if incorrect";
+        StyleInput(cpuModelBox);
+        deviceDetails.Controls.Add(cpuModelBox, 0, 1);
+        architectureBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        architectureBox.Items.AddRange(["ARM64", "ARM32", "x64", "x86", "Other", "Unknown"]);
+        architectureBox.SelectedItem = DetectArchitecture();
+        architectureBox.AccessibleName = "Processor architecture";
+        StyleInput(architectureBox);
+        deviceDetails.Controls.Add(architectureBox, 2, 1);
+        leaderboardLayout.Controls.Add(deviceDetails, 0, 2);
+
+        var leaderboardActions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = BackgroundColor,
+            Padding = new Padding(0, 4, 0, 0)
+        };
+        submitLeaderboardButton.Text = "Submit latest run";
+        submitLeaderboardButton.Enabled = false;
+        submitLeaderboardButton.Width = 150;
+        submitLeaderboardButton.Height = 36;
+        submitLeaderboardButton.Click += async (_, _) => await SubmitLatestRunAsync();
+        leaderboardActions.Controls.Add(submitLeaderboardButton);
+        refreshLeaderboardButton.Text = "Refresh results";
+        refreshLeaderboardButton.Width = 120;
+        refreshLeaderboardButton.Height = 36;
+        refreshLeaderboardButton.Click += async (_, _) => await RefreshLeaderboardAsync();
+        leaderboardActions.Controls.Add(refreshLeaderboardButton);
+        leaderboardLayout.Controls.Add(leaderboardActions, 0, 3);
+        leaderboardList.Dock = DockStyle.Fill;
+        leaderboardList.BackColor = PanelColor;
+        leaderboardList.ForeColor = Color.White;
+        leaderboardList.BorderStyle = BorderStyle.FixedSingle;
+        leaderboardList.HorizontalScrollbar = true;
+        leaderboardLayout.Controls.Add(leaderboardList, 0, 4);
+        leaderboardStatusLabel.Text = "Submitting is optional. Public entries are unverified.";
+        leaderboardStatusLabel.ForeColor = MutedColor;
+        leaderboardStatusLabel.Dock = DockStyle.Fill;
+        leaderboardStatusLabel.TextAlign = ContentAlignment.MiddleLeft;
+        leaderboardLayout.Controls.Add(leaderboardStatusLabel, 0, 5);
+        tabs.TabPages.Add(leaderboardPage);
     }
 
     private async Task ToggleBenchmarkAsync()

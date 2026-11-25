@@ -2,6 +2,18 @@
 
 Notable changes to Bitcoin Hashrate Benchmark are documented here.
 
+## [1.0.3] - Beta
+
+### Fixed
+
+- Replaced the cramped Windows desktop layout with separate benchmark, recent-runs, and leaderboard tabs.
+- Set the Windows leaderboard service to the live HTTPS endpoint by default, avoiding the blank-URL prompt on first launch.
+
+### Changed
+
+- Marked the browser and Windows desktop builds as beta releases.
+- GPU benchmarking is not included in this beta.
+
 ## [1.0.2] - 2026-11-24
 
 Browser/HTML release only. The Windows desktop app remains at version 1.0.1.

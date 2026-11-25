@@ -2,6 +2,9 @@ namespace BitcoinHashrateBenchmark;
 
 internal sealed class LeaderboardSettingsStore
 {
+    public const string DefaultServiceUrl =
+        "https://bitcoin-hashrate-benchmark.azgasgiant220.workers.dev";
+
     private readonly string filePath;
 
     public LeaderboardSettingsStore()
@@ -19,16 +22,21 @@ internal sealed class LeaderboardSettingsStore
     {
         try
         {
-            return File.ReadAllText(filePath).Trim();
+            var savedUrl = File.ReadAllText(filePath).Trim();
+            if (!string.IsNullOrWhiteSpace(savedUrl))
+            {
+                return savedUrl;
+            }
         }
         catch (FileNotFoundException)
         {
-            return Environment.GetEnvironmentVariable("BITCOIN_HASHRATE_LEADERBOARD_URL")?.Trim() ?? "";
         }
         catch (DirectoryNotFoundException)
         {
-            return Environment.GetEnvironmentVariable("BITCOIN_HASHRATE_LEADERBOARD_URL")?.Trim() ?? "";
         }
+
+        var configuredUrl = Environment.GetEnvironmentVariable("BITCOIN_HASHRATE_LEADERBOARD_URL")?.Trim();
+        return string.IsNullOrWhiteSpace(configuredUrl) ? DefaultServiceUrl : configuredUrl;
     }
 
     public void Save(string serviceUrl)
